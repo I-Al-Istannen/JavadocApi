@@ -28,12 +28,11 @@ public class HtmlCommentRender implements CommentVisitor<String>, CommentRendere
   @Override
   public String visitLink(JavadocCommentLink link) {
     String label = link.getLabel().orElse(formatLink(link.getTarget()));
-    String target = link.getTarget().asString();
-    String linkHtml = "<a href=\"" + target + "\">" + label + "</a>";
-    if (link.isPlain()) {
-      return linkHtml;
+    String target = "https://" + link.getTarget().asString();
+    if (!link.isPlain()) {
+      label = "<code>" + label + "</code>";
     }
-    return "<code>" + linkHtml + "</code>";
+    return "<a href=\"" + target + "\">" + label + "</a>";
   }
 
   private String formatLink(QualifiedName name) {
