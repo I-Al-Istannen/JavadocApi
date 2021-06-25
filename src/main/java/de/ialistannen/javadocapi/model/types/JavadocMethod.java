@@ -21,7 +21,8 @@ public class JavadocMethod implements JavadocElement {
 
   public JavadocMethod(QualifiedName name, QualifiedName returnType, List<String> modifiers,
       List<Parameter> parameters, List<QualifiedName> thrownTypes,
-      List<JavadocAnnotation> annotations, List<JavadocTypeParameter> typeParameters, JavadocComment comment) {
+      List<JavadocAnnotation> annotations, List<JavadocTypeParameter> typeParameters,
+      JavadocComment comment) {
     this.name = name;
     this.returnType = returnType;
     this.modifiers = modifiers;

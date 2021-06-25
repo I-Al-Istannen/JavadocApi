@@ -1,5 +1,6 @@
 package de.ialistannen.javadocapi;
 
+import com.google.gson.Gson;
 import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.JavadocElement.DeclarationStyle;
 import de.ialistannen.javadocapi.model.comment.JavadocComment;
@@ -8,14 +9,15 @@ import de.ialistannen.javadocapi.rendering.CommentRenderer;
 import de.ialistannen.javadocapi.rendering.HtmlCommentRender;
 import de.ialistannen.javadocapi.rendering.MarkdownCommentRenderer;
 import de.ialistannen.javadocapi.spoon.JavadocElementExtractor;
-import de.ialistannen.javadocapi.spoon.JavadocParser;
+import de.ialistannen.javadocapi.storage.ConfiguredGson;
+import de.ialistannen.javadocapi.storage.SqliteStorage;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import spoon.Launcher;
-import spoon.processing.AbstractProcessor;
 import spoon.reflect.CtModel;
-import spoon.reflect.code.CtJavaDoc;
 
 /**
  * Hello world!
@@ -50,18 +52,30 @@ public class Test {
    * @throws Exception an exception!
    */
   public static void main(String[] args) throws Exception {
+    Path databasePath = Path.of(
+        Test.class.getProtectionDomain().getCodeSource().getLocation().toURI()
+    )
+        .resolveSibling("Test.db");
+
+    List<JavadocElement> elements;
+    Gson gson = ConfiguredGson.create();
+    if (Files.exists(databasePath)) {
+      elements = new SqliteStorage(gson).load(databasePath);
+    } else {
+      elements = buildElements();
+      new SqliteStorage(gson).store(elements, databasePath);
+    }
+
+    printExampleElement(elements);
+  }
+
+  private static List<JavadocElement> buildElements() {
     Launcher launcher = new Launcher();
     launcher.addInputResource(
         "/home/i_al_istannen/Programming/Discord/JavadocApi/src/main/java/"
     );
     launcher.getEnvironment().setCommentEnabled(true);
     CtModel model = launcher.buildModel();
-    model.processWith(new AbstractProcessor<CtJavaDoc>() {
-      @Override
-      public void process(CtJavaDoc element) {
-        System.out.println(new JavadocParser().fromCtJavadoc(element));
-      }
-    });
     System.out.println();
     System.out.println();
     System.out.println();
@@ -69,7 +83,11 @@ public class Test {
 
     JavadocElementExtractor extractor = new JavadocElementExtractor();
     extractor.visitCtPackage(model.getRootPackage());
-    List<JavadocElement> elements = extractor.getFoundElements()
+    return extractor.getFoundElements();
+  }
+
+  private static void printExampleElement(List<JavadocElement> elements) {
+    elements = elements
         .stream()
         .filter(it -> it.getQualifiedName()
             .asString()
