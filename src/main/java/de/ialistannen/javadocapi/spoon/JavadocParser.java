@@ -67,7 +67,8 @@ public class JavadocParser {
     Type type = Type.valueOf(inline.getType().name());
 
     if (type == Type.LINK || type == Type.LINKPLAIN) {
-      String text = inline.getContent();
+      // Normalize newlines to single spaces
+      String text = inline.getContent().replaceAll("\\s+", " ");
       Pattern pattern = Pattern.compile("^([\\w$.]*)(#([\\w$]*)(\\((.*)\\))?)?( .+)?$");
       Matcher matcher = pattern.matcher(text);
       if (!matcher.find()) {
