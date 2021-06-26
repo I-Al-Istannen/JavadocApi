@@ -73,6 +73,10 @@ public class JavadocCommentInlineTag implements JavadocCommentFragment {
     /**
      * Displays constant values, i.e. the value of a public static constant
      */
-    VALUE
+    VALUE,
+    /**
+     * I have no idea honestly
+     */
+    UNKNOWN
   }
 }

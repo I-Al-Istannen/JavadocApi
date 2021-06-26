@@ -53,6 +53,7 @@ public class HtmlCommentRender implements CommentVisitor<String>, CommentRendere
       case INDEX -> "{Who uses an index?}";
       case INHERIT_DOC -> "{@inheritDoc}";
       case LINK, LINKPLAIN -> "";
+      case UNKNOWN -> "{UNKNOWN}";
     };
   }
 
