@@ -210,8 +210,19 @@ public class JavadocElementExtractor extends CtScanner {
       return;
     }
 
-    foundElements.add(forCtType(ctInterface, Type.INTERFACE));
+    try {
+      foundElements.add(forCtType(ctInterface, Type.INTERFACE));
+    } catch (SpoonException | NullPointerException | AssertionError e) {
+      System.out.println("Failed: " + ctInterface.getQualifiedName() + " " + e.getClass());
+    }
+    reportProgress();
     super.visitCtInterface(ctInterface);
+  }
+
+  private void reportProgress() {
+    if (foundElements.size() % 1000 == 0) {
+      System.out.println(" Indexed " + foundElements.size() + " elements so far");
+    }
   }
 
   @Override
@@ -221,7 +232,12 @@ public class JavadocElementExtractor extends CtScanner {
       return;
     }
 
-    foundElements.add(forCtType(annotationType, Type.ANNOTATION));
+    try {
+      foundElements.add(forCtType(annotationType, Type.ANNOTATION));
+    } catch (SpoonException | NullPointerException | AssertionError e) {
+      System.out.println("Failed: " + annotationType.getQualifiedName() + " " + e.getClass());
+    }
+    reportProgress();
     super.visitCtAnnotationType(annotationType);
   }
 
@@ -232,7 +248,12 @@ public class JavadocElementExtractor extends CtScanner {
       return;
     }
 
-    foundElements.add(forCtType(ctEnum, Type.ENUM));
+    try {
+      foundElements.add(forCtType(ctEnum, Type.ENUM));
+    } catch (SpoonException | NullPointerException | AssertionError e) {
+      System.out.println("Failed: " + ctEnum.getQualifiedName() + " " + e.getClass());
+    }
+    reportProgress();
     super.visitCtEnum(ctEnum);
   }
 
@@ -249,8 +270,6 @@ public class JavadocElementExtractor extends CtScanner {
         return;
       }
     }
-
-    super.visitCtPackage(ctPackage);
   }
 
   @Override
@@ -262,12 +281,12 @@ public class JavadocElementExtractor extends CtScanner {
 
     try {
       foundElements.add(forCtType(ctClass, Type.CLASS));
-      super.visitCtClass(ctClass);
-    } catch (SpoonException | NullPointerException e) {
-      System.out.println(ctClass.getQualifiedName());
-      System.out.println(ctClass);
+    } catch (SpoonException | NullPointerException | AssertionError e) {
+      System.out.println("Failed: " + ctClass.getQualifiedName() + " " + e.getClass());
       e.printStackTrace();
     }
+    reportProgress();
+    super.visitCtClass(ctClass);
   }
 
   @Override
@@ -276,29 +295,35 @@ public class JavadocElementExtractor extends CtScanner {
       return;
     }
 
-    List<Parameter> parameters = m.getParameters()
-        .stream()
-        .map(it -> new Parameter(
-            new QualifiedName(it.getType().getQualifiedName()),
-            it.getSimpleName())
-        )
-        .collect(Collectors.toList());
+    try {
+      List<Parameter> parameters = m.getParameters()
+          .stream()
+          .map(it -> new Parameter(
+              new QualifiedName(it.getType().getQualifiedName()),
+              it.getSimpleName())
+          )
+          .collect(Collectors.toList());
 
-    List<QualifiedName> thrownTypes = m.getThrownTypes()
-        .stream()
-        .map(it -> new QualifiedName(it.getQualifiedName()))
-        .collect(Collectors.toList());
+      List<QualifiedName> thrownTypes = m.getThrownTypes()
+          .stream()
+          .map(it -> new QualifiedName(it.getQualifiedName()))
+          .collect(Collectors.toList());
 
-    foundElements.add(new JavadocMethod(
-        signatureToQualifiedName(m.getDeclaringType(), m.getSignature()),
-        new QualifiedName(m.getType().getQualifiedName()),
-        getModifiers(m),
-        parameters,
-        thrownTypes,
-        getAnnotations(m),
-        getTypeParameters(m),
-        getComment(m)
-    ));
+      foundElements.add(new JavadocMethod(
+          signatureToQualifiedName(m.getDeclaringType(), m.getSignature()),
+          new QualifiedName(m.getType().getQualifiedName()),
+          getModifiers(m),
+          parameters,
+          thrownTypes,
+          getAnnotations(m),
+          getTypeParameters(m),
+          getComment(m)
+      ));
+    } catch (SpoonException | NullPointerException | AssertionError e) {
+      QualifiedName name = signatureToQualifiedName(m.getDeclaringType(), m.getSignature());
+      System.out.println("Failed: " + name + " " + e.getClass());
+    }
+    reportProgress();
     super.visitCtMethod(m);
   }
 
@@ -314,6 +339,7 @@ public class JavadocElementExtractor extends CtScanner {
         new QualifiedName(f.getType().getQualifiedName()),
         getComment(f)
     ));
+    reportProgress();
     super.visitCtField(f);
   }
 
@@ -345,11 +371,17 @@ public class JavadocElementExtractor extends CtScanner {
   }
 
   private <T> JavadocType forCtType(CtType<T> ctType, JavadocType.Type type) {
-    List<QualifiedName> memberNames = ctType.getAllExecutables()
-        .stream()
-        .map(CtExecutableReference::getSignature)
-        .map(sig -> signatureToQualifiedName(ctType, sig))
-        .collect(Collectors.toCollection(ArrayList::new));
+    List<QualifiedName> memberNames;
+    try {
+      memberNames = ctType.getAllExecutables()
+          .stream()
+          .map(CtExecutableReference::getSignature)
+          .map(sig -> signatureToQualifiedName(ctType, sig))
+          .collect(Collectors.toCollection(ArrayList::new));
+    } catch (SpoonException e) {
+      System.out.println(" Failed to fetch member functions for " + ctType.getQualifiedName());
+      memberNames = new ArrayList<>();
+    }
 
     ctType.getAllFields()
         .stream()
@@ -411,9 +443,7 @@ public class JavadocElementExtractor extends CtScanner {
     try {
       return Optional.ofNullable(parser.fromCtJavadoc(it));
     } catch (Exception e) {
-      System.out.println("==== " + type + " ====");
-      e.printStackTrace();
-      System.out.println(type);
+      System.out.println(" Fetching a JavaDoc comment failed :/");
       return Optional.empty();
     }
   }
