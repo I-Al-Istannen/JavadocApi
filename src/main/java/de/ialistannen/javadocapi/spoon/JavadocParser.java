@@ -69,7 +69,7 @@ public class JavadocParser {
     if (type == Type.LINK || type == Type.LINKPLAIN) {
       // Normalize newlines to single spaces
       String text = inline.getContent().replaceAll("\\s+", " ");
-      Pattern pattern = Pattern.compile("^([\\w$.]*)(#([\\w$]*)(\\((.*)\\))?)?( .+)?$");
+      Pattern pattern = Pattern.compile("^([\\w$.]*)(#([\\w.$]*)(\\((.*)\\))?)?( .+)?$");
       Matcher matcher = pattern.matcher(text);
       if (!matcher.find()) {
         throw new IllegalArgumentException(":(");
