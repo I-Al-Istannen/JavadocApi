@@ -11,6 +11,7 @@ import de.ialistannen.javadocapi.rendering.MarkdownCommentRenderer;
 import de.ialistannen.javadocapi.spoon.JavadocElementExtractor;
 import de.ialistannen.javadocapi.storage.ConfiguredGson;
 import de.ialistannen.javadocapi.storage.SqliteStorage;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
+import spoon.support.compiler.ProgressLogger;
 
 /**
  * Hello world!
@@ -47,6 +49,10 @@ public class Test {
    * <p>
    * You can find <em>many</em> things here.
    *
+   * {@linkplain Thread#interrupt interrupted}
+   *
+   * {@link #main(String[])}
+   *
    * @param args the arguments of type {@linkplain String hello} and a cool link {@link
    *     JavadocComment#equals(Object)} {@link JavadocComment#equals(Object other)}
    * @throws Exception an exception!
@@ -69,10 +75,36 @@ public class Test {
     printExampleElement(elements);
   }
 
-  private static List<JavadocElement> buildElements() {
+  private static List<JavadocElement> buildElements() throws IOException {
     Launcher launcher = new Launcher();
+    launcher.getEnvironment().disableConsistencyChecks();
+    launcher.getEnvironment().setSpoonProgress(
+        new ProgressLogger(launcher.getEnvironment()) {
+          public int touchedClasses = 0;
+
+          @Override
+          public void start(Process process) {
+            System.out.println("Start " + process);
+            touchedClasses = 0;
+          }
+
+          @Override
+          public void step(Process process, String task, int taskId, int nbTask) {
+            touchedClasses++;
+            if (touchedClasses % 1000 == 0) {
+              System.out.println(process + " " + task + " (" + touchedClasses + ")");
+            }
+          }
+
+          @Override
+          public void end(Process process) {
+            System.out.println("Done " + process + " (" + touchedClasses + ")");
+          }
+        }
+    );
     launcher.addInputResource(
         "/home/i_al_istannen/Programming/Discord/JavadocApi/src/main/java/"
+        //  new ZipFolder(new File("/usr/lib/jvm/java-8-openjdk/src.zip"))
     );
     launcher.getEnvironment().setCommentEnabled(true);
     CtModel model = launcher.buildModel();
