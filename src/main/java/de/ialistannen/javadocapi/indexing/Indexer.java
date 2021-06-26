@@ -3,6 +3,7 @@ package de.ialistannen.javadocapi.indexing;
 import de.ialistannen.javadocapi.spoon.JavadocElementExtractor;
 import de.ialistannen.javadocapi.storage.ConfiguredGson;
 import de.ialistannen.javadocapi.storage.SqliteStorage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +12,7 @@ import spoon.Launcher;
 import spoon.OutputType;
 import spoon.reflect.CtModel;
 import spoon.support.compiler.ProgressLogger;
+import spoon.support.compiler.ZipFolder;
 
 public class Indexer {
 
@@ -23,29 +25,39 @@ public class Indexer {
     String configFileString = Files.readString(Path.of(args[0]));
     IndexerConfig config = ConfiguredGson.create().fromJson(configFileString, IndexerConfig.class);
 
-    System.out.println("==== Configuring spoon ====");
+    System.out.println(heading("Configuring spoon"));
     Launcher launcher = new Launcher();
     launcher.getEnvironment().setShouldCompile(false);
     launcher.getEnvironment().disableConsistencyChecks();
     launcher.getEnvironment().setOutputType(OutputType.NO_OUTPUT);
     launcher.getEnvironment().setSpoonProgress(new ConsoleProcessLogger(launcher));
     launcher.getEnvironment().setCommentEnabled(true);
-    config.getResourcePaths().forEach(launcher::addInputResource);
-    System.out.println("\n\nSpoon successfully configured\n");
+    for (String path : config.getResourcePaths()) {
+      if (path.endsWith(".zip")) {
+        launcher.addInputResource(new ZipFolder(new File(path)));
+      } else {
+        launcher.addInputResource(path);
+      }
+    }
+    System.out.println("Spoon successfully configured\n");
 
-    System.out.println("==== Building spoon model ====");
+    System.out.println(heading("Building spoon model"));
     CtModel model = launcher.buildModel();
-    System.out.println("\n\nModel successfully built\n");
+    System.out.println("Model successfully built\n");
 
-    System.out.println("==== Converting Spoon Model  ====");
+    System.out.println(heading("Converting Spoon Model "));
     JavadocElementExtractor extractor = new JavadocElementExtractor(config.getAllowedPackages());
     extractor.visitCtPackage(model.getRootPackage());
-    System.out.println("\n\nModel successfully converted\n");
+    System.out.println("Model successfully converted\n");
 
-    System.out.println("==== Writing to output database ====");
+    System.out.println(heading("Writing to output database"));
     new SqliteStorage(ConfiguredGson.create()).store(
         extractor.getFoundElements(), Path.of(config.getOutputPath())
     );
+  }
+
+  private static String heading(String text) {
+    return "\n\033[94;1m==== \033[36;1m" + text + " \033[94;1m====\033[0m";
   }
 
   private static class ConsoleProcessLogger extends ProgressLogger {
@@ -69,14 +81,14 @@ public class Indexer {
       if (touchedClasses % 1000 == 0) {
         System.out.println(
             "Phase " + process + " has discovered " + touchedClasses
-                + " so far. Currently working on " + task
+                + " classes so far. Currently working on " + task
         );
       }
     }
 
     @Override
     public void end(Process process) {
-      System.out.println("Phase " + process + "done! Discovered Classes: " + touchedClasses);
+      System.out.println("Phase " + process + " done! Discovered Classes: " + touchedClasses);
     }
   }
 }
