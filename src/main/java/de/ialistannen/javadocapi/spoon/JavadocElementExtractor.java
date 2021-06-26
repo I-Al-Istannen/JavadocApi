@@ -135,7 +135,6 @@ public class JavadocElementExtractor extends CtScanner {
       foundElements.add(forCtType(ctClass, Type.CLASS));
     } catch (SpoonException | NullPointerException | AssertionError e) {
       System.out.println("Failed: " + ctClass.getQualifiedName() + " " + e.getClass());
-      e.printStackTrace();
     }
     reportProgress();
     super.visitCtClass(ctClass);
