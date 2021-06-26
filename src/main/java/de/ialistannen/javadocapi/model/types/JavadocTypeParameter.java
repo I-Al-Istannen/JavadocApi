@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 public class JavadocTypeParameter {
 
-  private final Pattern QUALIFIED = Pattern.compile(
+  private static final Pattern QUALIFIED = Pattern.compile(
       "([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)+([\\p{L}_$][\\p{L}\\p{N}_$]+)"
   );
 
