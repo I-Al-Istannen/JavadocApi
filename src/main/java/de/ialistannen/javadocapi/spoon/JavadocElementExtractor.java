@@ -275,18 +275,33 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public <T> void visitCtInterface(CtInterface<T> ctInterface) {
+    // Skip internal classes
+    if (!ctInterface.isPublic()) {
+      return;
+    }
+
     foundElements.add(forCtType(ctInterface, Type.INTERFACE));
     super.visitCtInterface(ctInterface);
   }
 
   @Override
   public <A extends Annotation> void visitCtAnnotationType(CtAnnotationType<A> annotationType) {
+    // Skip internal classes
+    if (!annotationType.isPublic()) {
+      return;
+    }
+
     foundElements.add(forCtType(annotationType, Type.ANNOTATION));
     super.visitCtAnnotationType(annotationType);
   }
 
   @Override
   public <T extends Enum<?>> void visitCtEnum(CtEnum<T> ctEnum) {
+    // Skip internal classes
+    if (!ctEnum.isPublic()) {
+      return;
+    }
+
     foundElements.add(forCtType(ctEnum, Type.ENUM));
     super.visitCtEnum(ctEnum);
   }
@@ -295,21 +310,30 @@ public class JavadocElementExtractor extends CtScanner {
   public void visitCtPackage(CtPackage ctPackage) {
     if (PACKAGE_WHITELIST.contains(ctPackage.getQualifiedName())) {
       super.visitCtPackage(ctPackage);
+      return;
     }
+
     for (String s : PACKAGE_WHITELIST) {
       if (s.startsWith(ctPackage.getQualifiedName())) {
         super.visitCtPackage(ctPackage);
         return;
       }
     }
+
+    super.visitCtPackage(ctPackage);
   }
 
   @Override
   public <T> void visitCtClass(CtClass<T> ctClass) {
+    // Skip internal classes
+    if (!ctClass.isPublic()) {
+      return;
+    }
+
     try {
       foundElements.add(forCtType(ctClass, Type.CLASS));
       super.visitCtClass(ctClass);
-    } catch (SpoonException e) {
+    } catch (SpoonException | NullPointerException e) {
       System.out.println(ctClass.getQualifiedName());
       System.out.println(ctClass);
       e.printStackTrace();
@@ -318,6 +342,10 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public <T> void visitCtMethod(CtMethod<T> m) {
+    if (!m.isPublic()) {
+      return;
+    }
+
     List<Parameter> parameters = m.getParameters()
         .stream()
         .map(it -> new Parameter(
@@ -346,6 +374,10 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public <T> void visitCtField(CtField<T> f) {
+    if (!f.isPublic()) {
+      return;
+    }
+
     foundElements.add(new JavadocField(
         new QualifiedName(f.getDeclaringType().getQualifiedName() + "#" + f.getSimpleName()),
         getModifiers(f),
