@@ -43,11 +43,15 @@ public class SqlStorage {
     String insert = "INSERT INTO JavadocElements VALUES (?, ?, ?);";
     try (PreparedStatement statement = connection.prepareStatement(insert)) {
 
-      for (JavadocElement element : elements) {
+      for (int i = 0; i < elements.size(); i++) {
+        JavadocElement element = elements.get(i);
         statement.setString(1, element.getQualifiedName().asString());
         statement.setString(2, ElementType.fromElement(element).name());
         statement.setString(3, gson.toJson(element));
         statement.addBatch();
+        if (i % 1000 == 0) {
+          statement.executeBatch();
+        }
       }
 
       statement.executeBatch();
