@@ -105,7 +105,7 @@ public class JavadocParser {
 
   private String qualifyTypeName(CtJavaDoc element, String name) {
     CtType<?> parentType = element.getParent(CtType.class);
-    if (parentType != null) {
+    if (parentType != null && !name.isBlank()) {
       Optional<CtTypeReference<?>> type = parentType.getReferencedTypes()
           .stream()
           .filter(it -> it.getQualifiedName().endsWith(name))
@@ -114,6 +114,10 @@ public class JavadocParser {
         return type.get().getQualifiedName();
       }
     }
+    if (parentType != null && name.isBlank()) {
+      return parentType.getQualifiedName();
+    }
+
     CtCompilationUnit parentUnit = element.getPosition().getCompilationUnit();
     return parentUnit.getImports()
         .stream()
