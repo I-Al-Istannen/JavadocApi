@@ -42,6 +42,7 @@ public class SqlStorage {
 
     String insert = "INSERT INTO JavadocElements VALUES (?, ?, ?);";
     try (PreparedStatement statement = connection.prepareStatement(insert)) {
+      connection.setAutoCommit(false);
 
       for (int i = 0; i < elements.size(); i++) {
         JavadocElement element = elements.get(i);
@@ -51,10 +52,13 @@ public class SqlStorage {
         statement.addBatch();
         if (i % 1000 == 0) {
           statement.executeBatch();
+          connection.commit();
         }
       }
 
       statement.executeBatch();
+      connection.commit();
+      connection.setAutoCommit(true);
     }
   }
 
