@@ -126,7 +126,7 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public <T> void visitCtMethod(CtMethod<T> m) {
-    if (!m.isPublic()) {
+    if (!m.isPublic() && !m.isProtected()) {
       return;
     }
 
@@ -159,7 +159,7 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public <T> void visitCtField(CtField<T> f) {
-    if (!f.isPublic()) {
+    if (!f.isPublic() && !f.isProtected()) {
       return;
     }
 
