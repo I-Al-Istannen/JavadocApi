@@ -153,6 +153,17 @@ public class JavadocParser {
     CtCompilationUnit parentUnit = element.getPosition().getCompilationUnit();
     return parentUnit.getImports()
         .stream()
+        .filter(it -> {
+          if (it.getImportKind() == CtImportKind.UNRESOLVED) {
+            String parent = "N/A";
+            if (it.getParent() instanceof CtCompilationUnit) {
+              parent = ((CtCompilationUnit) it.getParent()).getMainType().getQualifiedName();
+            }
+            System.out.println("  Found unresolved import in " + parent + ": " + it);
+            return false;
+          }
+          return true;
+        })
         .filter(it -> it.getReference().getSimpleName().equals(name))
         .findAny()
         .map(it -> {
