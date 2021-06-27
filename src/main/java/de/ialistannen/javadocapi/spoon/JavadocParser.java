@@ -22,10 +22,15 @@ import spoon.javadoc.internal.JavadocSnippet;
 import spoon.reflect.code.CtJavaDoc;
 import spoon.reflect.code.CtJavaDocTag;
 import spoon.reflect.declaration.CtCompilationUnit;
+import spoon.reflect.declaration.CtImportKind;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.reference.CtTypeReference;
 
 public class JavadocParser {
+
+  private static final Pattern LINK_PATTERN = Pattern.compile(
+      "^([\\w$.]*)(#([\\w.$]*)(\\((.*)\\))?)?( .+)?$"
+  );
 
   public JavadocComment fromCtJavadoc(CtJavaDoc javadoc) {
     List<JavadocCommentFragment> shortDescription = fromJavadoc(
@@ -64,15 +69,41 @@ public class JavadocParser {
   }
 
   private JavadocCommentInlineTag parseInlineTag(CtJavaDoc reference, JavadocInlineTag inline) {
-    Type type = Type.valueOf(inline.getType().name());
+    Type type = null;
+    try {
+      type = Type.valueOf(inline.getType().name());
+    } catch (IllegalArgumentException e) {
+      CtType<?> parent = reference.getParent(CtType.class);
+      if (parent != null) {
+        System.out.println(
+            "Lookup for " + inline.getType().name() + " failed in " + parent.getQualifiedName()
+        );
+      } else {
+        System.out.println("Lookup for " + inline.getType().name() + " failed");
+      }
+    }
 
     if (type == Type.LINK || type == Type.LINKPLAIN) {
       // Normalize newlines to single spaces
       String text = inline.getContent().replaceAll("\\s+", " ");
-      Pattern pattern = Pattern.compile("^([\\w$.]*)(#([\\w.$]*)(\\((.*)\\))?)?( .+)?$");
-      Matcher matcher = pattern.matcher(text);
+      if (text.matches("^\\w+\\(.+")) {
+        text = "#" + text;
+      }
+
+      Matcher matcher = LINK_PATTERN.matcher(text);
       if (!matcher.find()) {
-        throw new IllegalArgumentException(":(");
+        if (text.contains("<a ")) {
+          return new JavadocCommentInlineTag(Type.LINK, text);
+        }
+        CtType<?> parent = reference.getParent(CtType.class);
+        if (parent != null) {
+          System.out.println(
+              " Link lookup failed in " + parent.getQualifiedName() + " for '" + text + "'"
+          );
+        } else {
+          System.out.println(" Link lookup failed for '" + text + "'");
+        }
+        return new JavadocCommentInlineTag(Type.LINK, text);
       }
       String className = matcher.group(1);
       String methodName = matcher.group(3);
