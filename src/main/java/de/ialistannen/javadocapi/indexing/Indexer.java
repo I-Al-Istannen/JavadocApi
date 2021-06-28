@@ -32,6 +32,7 @@ public class Indexer {
     launcher.getEnvironment().setOutputType(OutputType.NO_OUTPUT);
     launcher.getEnvironment().setSpoonProgress(new ConsoleProcessLogger(launcher));
     launcher.getEnvironment().setCommentEnabled(true);
+    launcher.getEnvironment().setComplianceLevel(15);
     for (String path : config.getResourcePaths()) {
       if (path.endsWith(".zip")) {
         launcher.addInputResource(new ZipFolder(new File(path)));
@@ -47,7 +48,7 @@ public class Indexer {
 
     System.out.println(heading("Converting Spoon Model "));
     JavadocElementExtractor extractor = new JavadocElementExtractor(config.getAllowedPackages());
-    extractor.visitCtPackage(model.getRootPackage());
+    model.getAllModules().forEach(extractor::visitCtModule);
     System.out.println("Model successfully converted\n");
 
     System.out.println(heading("Writing to output database"));
