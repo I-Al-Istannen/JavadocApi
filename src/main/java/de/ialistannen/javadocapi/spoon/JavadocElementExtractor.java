@@ -235,16 +235,25 @@ public class JavadocElementExtractor extends CtScanner {
   }
 
   private <T> boolean executableReferenceIsVisible(CtType<T> ctType, CtExecutableReference<?> ref) {
-    CtExecutable<?> executable = ref.getExecutableDeclaration();
-    if (ref.getSimpleName().isEmpty()) {
+    CtExecutable<?> executable;
+    try {
+      executable = ref.getExecutableDeclaration();
+    } catch (Exception e) {
+      System.out.println(e.getClass() + " " + e.getMessage());
+      return false;
+    }
+    if (ref.getSimpleName().isEmpty() || ref.getSimpleName().equals("<init>")) {
       // If ref has no name ref surely wasn't important
-      // (Should only filter out initializer blocks)
+      // (Should only filter out static initializer blocks)
+      // And instance-initializer blocks are called "init". I have no idea why the static ones
+      // aren't called "clinit" in spoon, but I maybe don't want to know the answer.
       return false;
     }
     if (executable == null) {
       System.out.println(
           " Failed to get declaration of " + executableRefToQualifiedName(ctType, ref)
       );
+      System.out.println("  Name: " + ref.getSimpleName());
       return false;
     }
     if (executable instanceof CtModifiable) {
