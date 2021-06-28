@@ -24,6 +24,7 @@ import spoon.reflect.code.CtJavaDocTag;
 import spoon.reflect.declaration.CtCompilationUnit;
 import spoon.reflect.declaration.CtImportKind;
 import spoon.reflect.declaration.CtType;
+import spoon.reflect.declaration.CtTypeInformation;
 import spoon.reflect.reference.CtTypeReference;
 
 public class JavadocParser {
@@ -166,12 +167,13 @@ public class JavadocParser {
         })
         .filter(it -> it.getReference().getSimpleName().equals(name))
         .findAny()
-        .map(it -> {
-          if (it.getReferencedTypes().size() != 1) {
-            throw new AssertionError("Multiple types for import?");
-          }
-          return it.getReferencedTypes().iterator().next().getQualifiedName();
-        })
+        .flatMap(ctImport ->
+            ctImport.getReferencedTypes()
+            .stream()
+            .filter(it -> it.getSimpleName().equals(name))
+            .findFirst()
+            .map(CtTypeInformation::getQualifiedName)
+        )
         .orElse("" + name);
   }
 }
