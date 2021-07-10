@@ -1,4 +1,4 @@
-package de.ialistannen.javadocapi.storage;
+package de.ialistannen.javadocapi.querying;
 
 import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.QualifiedName;

@@ -3,6 +3,7 @@ package de.ialistannen.javadocapi.storage;
 import com.google.gson.Gson;
 import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.QualifiedName;
+import de.ialistannen.javadocapi.querying.QueryApi;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
