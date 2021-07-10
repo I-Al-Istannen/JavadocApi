@@ -46,9 +46,17 @@ public class HtmlCommentRender implements CommentVisitor<String>, CommentRendere
 
   @Override
   public String visitInlineTag(JavadocCommentInlineTag tag) {
+    // Magic incantation to make CopyDown emit proper language tags
+    String codeOpenTag = "<code class=\"language-java\">";
     return switch (tag.getType()) {
-      case LITERAL, VALUE -> "<code>" + tag.getArgument().orElse("") + "</code>";
-      case CODE -> "<pre>" + tag.getArgument().orElse("") + "</pre>";
+      case LITERAL, VALUE -> codeOpenTag + tag.getArgument().orElse("") + "</code>";
+      case CODE -> {
+        String result = codeOpenTag + tag.getArgument().orElse("") + "</code>";
+        if (result.lines().count() > 1) {
+          result = "<pre>" + result + "</pre>";
+        }
+        yield result;
+      }
       case DOC_ROOT -> "{Why did you place a doc root?}";
       case INDEX -> "{Who uses an index?}";
       case INHERIT_DOC -> "{@inheritDoc}";
