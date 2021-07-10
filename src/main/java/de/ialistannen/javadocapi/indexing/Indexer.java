@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import spoon.Launcher;
 import spoon.OutputType;
 import spoon.reflect.CtModel;
@@ -16,7 +15,7 @@ import spoon.support.compiler.ZipFolder;
 
 public class Indexer {
 
-  public static void main(String[] args) throws IOException, SQLException {
+  public static void main(String[] args) throws IOException {
     if (args.length != 1) {
       System.err.println("Usage: Indexer <path to config>");
       System.exit(1);
@@ -52,9 +51,8 @@ public class Indexer {
     System.out.println("Model successfully converted\n");
 
     System.out.println(heading("Writing to output database"));
-    new SqliteStorage(ConfiguredGson.create()).store(
-        extractor.getFoundElements(), Path.of(config.getOutputPath())
-    );
+    new SqliteStorage(ConfiguredGson.create(), Path.of(config.getOutputPath()))
+        .addAll(extractor.getFoundElements());
   }
 
   private static String heading(String text) {

@@ -28,7 +28,7 @@ public class SqlStorage {
    * @param connection the connection to use
    * @throws SQLException if an error occurred
    */
-  public void store(List<JavadocElement> elements, Connection connection) throws SQLException {
+  protected void addAll(List<JavadocElement> elements, Connection connection) throws SQLException {
     String createTable = "CREATE TABLE IF NOT EXISTS JavadocElements\n"
         + "(\n"
         + "    qualified_name VARCHAR(40) PRIMARY KEY,\n"
@@ -62,21 +62,50 @@ public class SqlStorage {
     }
   }
 
-  public List<JavadocElement> load(Connection connection) throws SQLException {
-    List<JavadocElement> elements = new ArrayList<>();
-
+  protected List<JavadocElement> findALl(Connection connection) throws SQLException {
     String query = "SELECT * FROM JavadocElements;";
     try (PreparedStatement statement = connection.prepareStatement(query);
         ResultSet resultSet = statement.executeQuery()) {
 
-      while (resultSet.next()) {
-        ElementType type = ElementType.valueOf(resultSet.getString(2));
-        String dataString = resultSet.getString(3);
-        elements.add(gson.fromJson(dataString, type.getElementClass()));
+      return parseResults(resultSet);
+    }
+  }
+
+  private List<JavadocElement> parseResults(ResultSet resultSet) throws SQLException {
+    List<JavadocElement> elements = new ArrayList<>();
+
+    while (resultSet.next()) {
+      ElementType type = ElementType.valueOf(resultSet.getString(2));
+      String dataString = resultSet.getString(3);
+      elements.add(gson.fromJson(dataString, type.getElementClass()));
+    }
+    return elements;
+  }
+
+  protected List<JavadocElement> findClassByName(Connection connection, String name)
+      throws SQLException {
+    String query = "SELECT * "
+        + "FROM JavadocElements\n"
+        + "WHERE qualified_name LIKE '%' || ?";
+    try (PreparedStatement statement = connection.prepareStatement(query)) {
+      statement.setString(1, name);
+      try (ResultSet resultSet = statement.executeQuery()) {
+        return parseResults(resultSet);
       }
     }
+  }
 
-    return elements;
+  protected List<JavadocElement> findEnclosedElements(Connection connection, String className)
+      throws SQLException {
+    String query = "SELECT * "
+        + "FROM JavadocElements\n"
+        + "WHERE qualified_name LIKE ? || '#%'";
+    try (PreparedStatement statement = connection.prepareStatement(query)) {
+      statement.setString(1, className);
+      try (ResultSet resultSet = statement.executeQuery()) {
+        return parseResults(resultSet);
+      }
+    }
   }
 
   private enum ElementType {
