@@ -43,6 +43,16 @@ public class QualifiedName extends Identifier {
   }
 
   /**
+   * Checks if this qualified name belongs to a method by verifying {@literal (} appears in the
+   * name.
+   *
+   * @return true if this name is for a method
+   */
+  public boolean isMethod() {
+    return asText.contains("(");
+  }
+
+  /**
    * @param style the style to use
    * @return the name formatted according to the given declaration style
    */

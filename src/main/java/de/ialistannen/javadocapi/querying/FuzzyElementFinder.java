@@ -1,2 +1,197 @@
-package de.ialistannen.javadocapi.querying;public class FuzzyElementFinder {
+package de.ialistannen.javadocapi.querying;
+
+import de.ialistannen.javadocapi.model.QualifiedName;
+import de.ialistannen.javadocapi.model.types.JavadocType;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+public class FuzzyElementFinder {
+
+  public List<FuzzyMatchResult> fuzzyMatch(QueryApi queryApi, String queryString) {
+    queryString = queryString.toUpperCase(Locale.ROOT);
+    Query query = Query.fromString(queryString);
+
+    if (query == null) {
+      return List.of();
+    }
+
+    List<JavadocType> potentialClasses = queryApi.findClassByName(query.getClassName());
+
+    if (query.getElementName() == null) {
+      return potentialClasses
+          .stream()
+          .map(JavadocType::getQualifiedName)
+          .map(name -> toResult(query, name))
+          .collect(Collectors.toList());
+    }
+
+    List<QualifiedName> results = new ArrayList<>();
+
+    for (JavadocType potentialClass : potentialClasses) {
+      var enclosed = potentialClass.getMembers()
+          .stream()
+          .filter(
+              it -> it.getSimpleName().toUpperCase(Locale.ROOT).endsWith(query.getElementName())
+          )
+          .filter(it -> (query.getParameters() == null) != it.isMethod())
+          .collect(Collectors.toList());
+
+      if (query.getParameters() == null) {
+        results.addAll(enclosed);
+        continue;
+      }
+
+      enclosed.stream()
+          .filter(it -> fuzzyMatchParameters(query.getParameters(), it))
+          .forEach(results::add);
+    }
+
+    return results
+        .stream()
+        .map(name -> toResult(query, name))
+        .collect(Collectors.toList());
+  }
+
+  private static boolean fuzzyMatchParameters(List<String> query, QualifiedName actual) {
+    List<String> actualParameterTypes = Query
+        .fromString(actual.asString().toUpperCase(Locale.ROOT))
+        .getParameters();
+
+    if (query.size() > actualParameterTypes.size()) {
+      return false;
+    }
+    for (int i = 0; i < query.size(); i++) {
+      String queryParam = query.get(i);
+      String actualParam = actualParameterTypes.get(i);
+
+      if (!actualParam.endsWith(queryParam)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private FuzzyMatchResult toResult(Query query, QualifiedName elementName) {
+    Query elementQuery = Query.fromString(elementName.asString().toUpperCase(Locale.ROOT));
+    boolean exact = query.exactToReference(elementQuery);
+
+    return new FuzzyMatchResult(exact, elementName);
+  }
+
+  private static class Query {
+
+    private static final Pattern FIELD_PATTERN = Pattern.compile("^([\\w.$]+)#([\\w$]+)$");
+    private static final Pattern METHOD_PATTERN = Pattern.compile(
+        "^([\\w.$]+)#([\\w$]+)\\((.*)\\)?$"
+    );
+    private static final Pattern PARAMETER_PATTERN = Pattern.compile("([\\w.$]+)( [\\w$]+)?(, *)?");
+
+    private final String className;
+    private final String elementName;
+    private final List<String> parameters;
+
+    private Query(String className, String elementName, List<String> parameters) {
+      this.className = className;
+      this.elementName = elementName;
+      this.parameters = parameters;
+    }
+
+    public String getClassName() {
+      return className;
+    }
+
+    public String getElementName() {
+      return elementName;
+    }
+
+    public List<String> getParameters() {
+      return parameters;
+    }
+
+    public static Query fromString(String queryString) {
+      String query = queryString.strip().replaceAll("\\s+", " ");
+
+      if (query.matches("^(\\w|\\.)+$")) {
+        return new Query(query, null, null);
+      }
+      Matcher matcher = FIELD_PATTERN.matcher(query);
+      if (matcher.matches()) {
+        return new Query(matcher.group(1).strip(), matcher.group(2).strip(), null);
+      }
+
+      matcher = METHOD_PATTERN.matcher(query);
+      if (!matcher.matches()) {
+        return null;
+      }
+      String className = matcher.group(1).strip();
+      String methodName = matcher.group(2).strip();
+      String parameterString = matcher.group(3).strip();
+
+      if (parameterString.isEmpty()) {
+        return new Query(className, methodName, List.of());
+      }
+      matcher = PARAMETER_PATTERN.matcher(parameterString);
+      List<String> parameters = new ArrayList<>();
+
+      while (matcher.find()) {
+        parameters.add(matcher.group(1).strip());
+      }
+
+      return new Query(className, methodName, parameters);
+    }
+
+    public boolean exactToReference(Query reference) {
+      if ((getParameters() == null) != (reference.getParameters() == null)) {
+        return false;
+      }
+      if ((getElementName() == null) != (reference.getElementName() == null)) {
+        return false;
+      }
+      if (!classMatchWithReference(getClassName(), reference.getClassName())) {
+        return false;
+      }
+
+      if (getElementName() == null) {
+        return true;
+      }
+      if (!reference.getElementName().equals(getElementName())) {
+        return false;
+      }
+
+      if (getParameters() == null) {
+        return true;
+      }
+      if (getParameters().size() != reference.getParameters().size()) {
+        return false;
+      }
+      List<String> strings = getParameters();
+      for (int i = 0; i < strings.size(); i++) {
+        String parameter = strings.get(i);
+        if (!classMatchWithReference(parameter, reference.getParameters().get(i))) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    private boolean classMatchWithReference(String myName, String reference) {
+      boolean classExactMatch = myName.equals(reference);
+      boolean classUnqualifiedExactMatch = reference.contains("." + myName);
+      return classExactMatch || classUnqualifiedExactMatch;
+    }
+
+    @Override
+    public String toString() {
+      return "Query{" +
+          "className='" + className + '\'' +
+          ", elementName='" + elementName + '\'' +
+          ", parameters=" + parameters +
+          '}';
+    }
+  }
 }

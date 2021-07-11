@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SqlStorage {
 
@@ -62,7 +63,7 @@ public class SqlStorage {
     }
   }
 
-  protected List<JavadocElement> findALl(Connection connection) throws SQLException {
+  protected List<JavadocElement> findAll(Connection connection) throws SQLException {
     String query = "SELECT * FROM JavadocElements;";
     try (PreparedStatement statement = connection.prepareStatement(query);
         ResultSet resultSet = statement.executeQuery()) {
@@ -82,28 +83,19 @@ public class SqlStorage {
     return elements;
   }
 
-  protected List<JavadocElement> findClassByName(Connection connection, String name)
+  protected List<JavadocType> findClassByName(Connection connection, String name)
       throws SQLException {
     String query = "SELECT * "
         + "FROM JavadocElements\n"
-        + "WHERE qualified_name LIKE '%' || ?";
+        + "WHERE UPPER(qualified_name) LIKE '%' || ? AND qualified_name NOT LIKE '%#%'";
     try (PreparedStatement statement = connection.prepareStatement(query)) {
       statement.setString(1, name);
       try (ResultSet resultSet = statement.executeQuery()) {
-        return parseResults(resultSet);
-      }
-    }
-  }
-
-  protected List<JavadocElement> findEnclosedElements(Connection connection, String className)
-      throws SQLException {
-    String query = "SELECT * "
-        + "FROM JavadocElements\n"
-        + "WHERE qualified_name LIKE ? || '#%'";
-    try (PreparedStatement statement = connection.prepareStatement(query)) {
-      statement.setString(1, className);
-      try (ResultSet resultSet = statement.executeQuery()) {
-        return parseResults(resultSet);
+        return parseResults(resultSet)
+            .stream()
+            .filter(it -> it instanceof JavadocType)
+            .map(it -> (JavadocType) it)
+            .collect(Collectors.toList());
       }
     }
   }

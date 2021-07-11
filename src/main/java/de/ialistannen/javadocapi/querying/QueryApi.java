@@ -1,7 +1,7 @@
 package de.ialistannen.javadocapi.querying;
 
 import de.ialistannen.javadocapi.model.JavadocElement;
-import de.ialistannen.javadocapi.model.QualifiedName;
+import de.ialistannen.javadocapi.model.types.JavadocType;
 import java.util.List;
 
 public interface QueryApi {
@@ -27,25 +27,12 @@ public interface QueryApi {
    * @return a list with all javadoc elements matching the class filter
    * @throws FetchException if an error occurs
    */
-  List<JavadocElement> findClassByName(String name);
-
-  /**
-   * Returns all enclosed elements of the type with the given qualified name.
-   *
-   * @param className the name of the class
-   * @return all child elements of the given class
-   * @throws FetchException if an error occurs
-   */
-  List<JavadocElement> findEnclosedElements(QualifiedName className);
+  List<JavadocType> findClassByName(String name);
 
   class FetchException extends RuntimeException {
 
     public FetchException(Throwable cause) {
       super(cause);
-    }
-
-    public FetchException(String message, Throwable cause) {
-      super(message, cause);
     }
   }
 }

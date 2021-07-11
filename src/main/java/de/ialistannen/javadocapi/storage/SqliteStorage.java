@@ -3,6 +3,7 @@ package de.ialistannen.javadocapi.storage;
 import com.google.gson.Gson;
 import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.QualifiedName;
+import de.ialistannen.javadocapi.model.types.JavadocType;
 import de.ialistannen.javadocapi.querying.QueryApi;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -34,17 +35,12 @@ public class SqliteStorage extends SqlStorage implements QueryApi {
 
   @Override
   public List<JavadocElement> findAll() {
-    return withConnection(super::findALl);
+    return withConnection(super::findAll);
   }
 
   @Override
-  public List<JavadocElement> findClassByName(String name) {
+  public List<JavadocType> findClassByName(String name) {
     return withConnection(connection -> super.findClassByName(connection, name));
-  }
-
-  @Override
-  public List<JavadocElement> findEnclosedElements(QualifiedName className) {
-    return withConnection(connection -> super.findEnclosedElements(connection, className.asString()));
   }
 
   private <T> T withConnection(SqlCallable<T> callable) {
