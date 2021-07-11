@@ -1,5 +1,7 @@
 package de.ialistannen.javadocapi.storage;
 
+import static org.apache.commons.lang3.StringUtils.reverse;
+
 import com.google.gson.Gson;
 import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.types.JavadocField;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 
 public class SqlStorage {
 
@@ -32,21 +35,25 @@ public class SqlStorage {
   protected void addAll(List<JavadocElement> elements, Connection connection) throws SQLException {
     String createTable = "CREATE TABLE IF NOT EXISTS JavadocElements\n"
         + "(\n"
-        + "    qualified_name VARCHAR(40) PRIMARY KEY,\n"
-        + "    type           VARCHAR(10) NOT NULL,\n"
-        + "    data           VARCHAR(100) NOT NULL\n"
-        + ");";
+        + "    reversed_qualified_name VARCHAR(40),\n"
+        + "    qualified_name          VARCHAR(40) PRIMARY KEY,\n"
+        + "    type                    VARCHAR(10) NOT NULL,\n"
+        + "    data                    VARCHAR(100) NOT NULL\n"
+        + ");"
+        + "CREATE UNIQUE INDEX `REV_QUALIFIED_INDEX`\n"
+        + "  ON JavadocElements (reversed_qualified_name COLLATE NOCASE)";
 
     try (PreparedStatement preparedStatement = connection.prepareStatement(createTable)) {
       preparedStatement.execute();
     }
 
-    String insert = "INSERT INTO JavadocElements VALUES (?, ?, ?);";
+    String insert = "INSERT INTO JavadocElements VALUES (?, ?, ?, ?);";
     try (PreparedStatement statement = connection.prepareStatement(insert)) {
       connection.setAutoCommit(false);
 
       for (int i = 0; i < elements.size(); i++) {
         JavadocElement element = elements.get(i);
+        statement.setString(1, reverse(element.getQualifiedName().asString()));
         statement.setString(1, element.getQualifiedName().asString());
         statement.setString(2, ElementType.fromElement(element).name());
         statement.setString(3, gson.toJson(element));
@@ -76,8 +83,8 @@ public class SqlStorage {
     List<JavadocElement> elements = new ArrayList<>();
 
     while (resultSet.next()) {
-      ElementType type = ElementType.valueOf(resultSet.getString(2));
-      String dataString = resultSet.getString(3);
+      ElementType type = ElementType.valueOf(resultSet.getString("type"));
+      String dataString = resultSet.getString("data");
       elements.add(gson.fromJson(dataString, type.getElementClass()));
     }
     return elements;
@@ -87,9 +94,9 @@ public class SqlStorage {
       throws SQLException {
     String query = "SELECT * "
         + "FROM JavadocElements\n"
-        + "WHERE UPPER(qualified_name) LIKE '%' || ? AND qualified_name NOT LIKE '%#%'";
+        + "WHERE reversed_qualified_name LIKE ? AND qualified_name NOT LIKE '%#%'";
     try (PreparedStatement statement = connection.prepareStatement(query)) {
-      statement.setString(1, name);
+      statement.setString(1, reverse(name) + "%");
       try (ResultSet resultSet = statement.executeQuery()) {
         return parseResults(resultSet)
             .stream()
