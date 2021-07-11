@@ -3,20 +3,27 @@ package de.ialistannen.javadocapi.storage;
 import com.google.gson.Gson;
 import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.types.JavadocType;
-import de.ialistannen.javadocapi.querying.QueryApi;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class SqliteStorage extends SqlStorage implements QueryApi {
+public class SqliteStorage extends SqlStorage implements ElementLoader {
 
   private final Path file;
 
   public SqliteStorage(Gson gson, Path file) {
     super(gson);
     this.file = file;
+  }
+
+  /**
+   * @return the loaded file
+   */
+  public Path getFile() {
+    return file;
   }
 
   /**
@@ -33,13 +40,19 @@ public class SqliteStorage extends SqlStorage implements QueryApi {
   }
 
   @Override
-  public List<JavadocElement> findAll() {
-    return withConnection(super::findAll);
+  public List<LoadResult<JavadocElement>> findAll() {
+    return withConnection(connection -> super.findAll(connection)
+        .stream()
+        .map(element -> new LoadResult<>(element, this))
+        .collect(Collectors.toList()));
   }
 
   @Override
-  public List<JavadocType> findClassByName(String name) {
-    return withConnection(connection -> super.findClassByName(connection, name));
+  public List<LoadResult<JavadocType>> findClassByName(String name) {
+    return withConnection(connection -> super.findClassByName(connection, name)
+        .stream()
+        .map(element -> new LoadResult<>(element, this))
+        .collect(Collectors.toList()));
   }
 
   private <T> T withConnection(SqlCallable<T> callable) {
@@ -52,6 +65,11 @@ public class SqliteStorage extends SqlStorage implements QueryApi {
 
   private String buildUrl(Path file) {
     return "jdbc:sqlite:" + file.toAbsolutePath();
+  }
+
+  @Override
+  public String toString() {
+    return "sqlite:" + file;
   }
 
   private interface SqlCallable<T> {

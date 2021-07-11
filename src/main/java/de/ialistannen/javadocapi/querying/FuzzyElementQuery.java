@@ -2,6 +2,8 @@ package de.ialistannen.javadocapi.querying;
 
 import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.types.JavadocType;
+import de.ialistannen.javadocapi.storage.ElementLoader;
+import de.ialistannen.javadocapi.storage.ElementLoader.LoadResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -9,9 +11,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class FuzzyElementFinder {
+public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
 
-  public List<FuzzyMatchResult> fuzzyMatch(QueryApi queryApi, String queryString) {
+  @Override
+  public List<FuzzyQueryResult> query(ElementLoader queryApi, String queryString) {
     queryString = queryString.toUpperCase(Locale.ROOT);
     Query query = Query.fromString(queryString);
 
@@ -19,25 +22,29 @@ public class FuzzyElementFinder {
       return List.of();
     }
 
-    List<JavadocType> potentialClasses = queryApi.findClassByName(query.getClassName());
+    List<LoadResult<JavadocType>> potentialClasses = queryApi.findClassByName(query.getClassName());
 
     if (query.getElementName() == null) {
       return potentialClasses
           .stream()
-          .map(JavadocType::getQualifiedName)
+          .map(it -> it.map(JavadocType::getQualifiedName))
           .map(name -> toResult(query, name))
           .collect(Collectors.toList());
     }
 
-    List<QualifiedName> results = new ArrayList<>();
+    List<LoadResult<QualifiedName>> results = new ArrayList<>();
 
-    for (JavadocType potentialClass : potentialClasses) {
-      var enclosed = potentialClass.getMembers()
+    for (var potentialClass : potentialClasses) {
+      var enclosed = potentialClass.getResult().getMembers()
           .stream()
+          .map(it -> new LoadResult<>(it, potentialClass.getLoader()))
           .filter(
-              it -> it.getSimpleName().toUpperCase(Locale.ROOT).endsWith(query.getElementName())
+              it -> it.getResult()
+                  .getSimpleName()
+                  .toUpperCase(Locale.ROOT)
+                  .endsWith(query.getElementName())
           )
-          .filter(it -> (query.getParameters() == null) != it.isMethod())
+          .filter(it -> (query.getParameters() == null) != it.getResult().isMethod())
           .collect(Collectors.toList());
 
       if (query.getParameters() == null) {
@@ -46,7 +53,7 @@ public class FuzzyElementFinder {
       }
 
       enclosed.stream()
-          .filter(it -> fuzzyMatchParameters(query.getParameters(), it))
+          .filter(it -> fuzzyMatchParameters(query.getParameters(), it.getResult()))
           .forEach(results::add);
     }
 
@@ -76,11 +83,11 @@ public class FuzzyElementFinder {
     return true;
   }
 
-  private FuzzyMatchResult toResult(Query query, QualifiedName elementName) {
-    Query elementQuery = Query.fromString(elementName.asString().toUpperCase(Locale.ROOT));
+  private FuzzyQueryResult toResult(Query query, LoadResult<QualifiedName> element) {
+    Query elementQuery = Query.fromString(element.getResult().asString().toUpperCase(Locale.ROOT));
     boolean exact = query.exactToReference(elementQuery);
 
-    return new FuzzyMatchResult(exact, elementName);
+    return new FuzzyQueryResult(exact, element.getResult(), element.getLoader());
   }
 
   private static class Query {

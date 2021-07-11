@@ -1,23 +1,32 @@
 package de.ialistannen.javadocapi.querying;
 
 import de.ialistannen.javadocapi.model.QualifiedName;
+import de.ialistannen.javadocapi.storage.ElementLoader;
 
-public class FuzzyMatchResult {
+public class FuzzyQueryResult implements QueryResult {
 
   private final boolean exact;
   private final QualifiedName qualifiedName;
+  private final ElementLoader loader;
 
-  public FuzzyMatchResult(boolean exact, QualifiedName qualifiedName) {
+  public FuzzyQueryResult(boolean exact, QualifiedName qualifiedName, ElementLoader loader) {
     this.exact = exact;
     this.qualifiedName = qualifiedName;
+    this.loader = loader;
   }
 
   public boolean isExact() {
     return exact;
   }
 
+  @Override
   public QualifiedName getQualifiedName() {
     return qualifiedName;
+  }
+
+  @Override
+  public ElementLoader getSourceLoader() {
+    return loader;
   }
 
   @Override
