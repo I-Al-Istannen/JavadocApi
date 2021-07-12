@@ -126,7 +126,7 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
     public static Query fromString(String queryString) {
       String query = queryString.strip().replaceAll("\\s+", " ");
 
-      if (query.matches("^(\\w|\\.)+$")) {
+      if (query.matches("^[\\w.$]+$")) {
         return new Query(query, null, null);
       }
       Matcher matcher = FIELD_PATTERN.matcher(query);

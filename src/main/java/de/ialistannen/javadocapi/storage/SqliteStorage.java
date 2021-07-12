@@ -79,7 +79,7 @@ public class SqliteStorage extends SqlStorage implements ElementLoader {
 
   @Override
   public String toString() {
-    return "sqlite:" + file;
+    return "sqlite:" + file.getFileName();
   }
 
   private interface SqlCallable<T> {
