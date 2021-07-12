@@ -1,8 +1,9 @@
 package de.ialistannen.javadocapi.storage;
 
 import de.ialistannen.javadocapi.model.JavadocElement;
+import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.types.JavadocType;
-import java.util.List;
+import java.util.Collection;
 import java.util.function.Function;
 
 public interface ElementLoader {
@@ -11,7 +12,7 @@ public interface ElementLoader {
    * @return all javadoc elements in this storage
    * @throws FetchException if an error occurs
    */
-  List<LoadResult<JavadocElement>> findAll();
+  Collection<LoadResult<JavadocElement>> findAll();
 
   /**
    * Searchs for a class by its name. The name can be an arbitrary substring of the name anchored at
@@ -28,7 +29,16 @@ public interface ElementLoader {
    * @return a list with all javadoc elements matching the class filter
    * @throws FetchException if an error occurs
    */
-  List<LoadResult<JavadocType>> findClassByName(String name);
+  Collection<LoadResult<JavadocType>> findClassByName(String name);
+
+  /**
+   * Finds an element by its qualified name. This might not be unique if multiple loaders have the
+   * same element, so a List is returned.
+   *
+   * @param name the name of the element
+   * @return the element, if found
+   */
+  Collection<LoadResult<JavadocElement>> findByQualifiedName(QualifiedName name);
 
   class FetchException extends RuntimeException {
 

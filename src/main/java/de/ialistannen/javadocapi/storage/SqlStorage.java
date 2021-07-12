@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.reverse;
 
 import com.google.gson.Gson;
 import de.ialistannen.javadocapi.model.JavadocElement;
+import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.types.JavadocField;
 import de.ialistannen.javadocapi.model.types.JavadocMethod;
 import de.ialistannen.javadocapi.model.types.JavadocType;
@@ -15,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 
 public class SqlStorage {
 
@@ -103,6 +103,19 @@ public class SqlStorage {
             .filter(it -> it instanceof JavadocType)
             .map(it -> (JavadocType) it)
             .collect(Collectors.toList());
+      }
+    }
+  }
+
+  protected List<JavadocElement> findByQualifiedName(Connection connection, QualifiedName name)
+      throws SQLException {
+    String query = "SELECT * "
+        + "FROM JavadocElements\n"
+        + "WHERE qualified_name = ?";
+    try (PreparedStatement statement = connection.prepareStatement(query)) {
+      statement.setString(1, name.asString());
+      try (ResultSet resultSet = statement.executeQuery()) {
+        return parseResults(resultSet);
       }
     }
   }

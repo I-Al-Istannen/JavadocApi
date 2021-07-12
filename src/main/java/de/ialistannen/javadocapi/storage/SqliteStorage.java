@@ -2,11 +2,13 @@ package de.ialistannen.javadocapi.storage;
 
 import com.google.gson.Gson;
 import de.ialistannen.javadocapi.model.JavadocElement;
+import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.types.JavadocType;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,7 +42,7 @@ public class SqliteStorage extends SqlStorage implements ElementLoader {
   }
 
   @Override
-  public List<LoadResult<JavadocElement>> findAll() {
+  public Collection<LoadResult<JavadocElement>> findAll() {
     return withConnection(connection -> super.findAll(connection)
         .stream()
         .map(element -> new LoadResult<>(element, this))
@@ -48,11 +50,19 @@ public class SqliteStorage extends SqlStorage implements ElementLoader {
   }
 
   @Override
-  public List<LoadResult<JavadocType>> findClassByName(String name) {
+  public Collection<LoadResult<JavadocType>> findClassByName(String name) {
     return withConnection(connection -> super.findClassByName(connection, name)
         .stream()
         .map(element -> new LoadResult<>(element, this))
         .collect(Collectors.toList()));
+  }
+
+  @Override
+  public Collection<LoadResult<JavadocElement>> findByQualifiedName(QualifiedName name) {
+    return withConnection(connection -> super.findByQualifiedName(connection, name))
+        .stream()
+        .map(element -> new LoadResult<>(element, this))
+        .collect(Collectors.toList());
   }
 
   private <T> T withConnection(SqlCallable<T> callable) {

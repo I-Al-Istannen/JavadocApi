@@ -5,6 +5,7 @@ import de.ialistannen.javadocapi.model.types.JavadocType;
 import de.ialistannen.javadocapi.storage.ElementLoader;
 import de.ialistannen.javadocapi.storage.ElementLoader.LoadResult;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -22,7 +23,9 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
       return List.of();
     }
 
-    List<LoadResult<JavadocType>> potentialClasses = queryApi.findClassByName(query.getClassName());
+    Collection<LoadResult<JavadocType>> potentialClasses = queryApi.findClassByName(
+        query.getClassName()
+    );
 
     if (query.getElementName() == null) {
       return potentialClasses

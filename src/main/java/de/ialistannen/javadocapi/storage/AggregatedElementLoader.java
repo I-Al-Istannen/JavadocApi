@@ -1,6 +1,7 @@
 package de.ialistannen.javadocapi.storage;
 
 import de.ialistannen.javadocapi.model.JavadocElement;
+import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.types.JavadocType;
 import java.util.Collection;
 import java.util.List;
@@ -18,7 +19,7 @@ public class AggregatedElementLoader implements ElementLoader {
   }
 
   @Override
-  public List<LoadResult<JavadocElement>> findAll() {
+  public Collection<LoadResult<JavadocElement>> findAll() {
     return apis.stream()
         .map(ElementLoader::findAll)
         .flatMap(Collection::stream)
@@ -26,9 +27,16 @@ public class AggregatedElementLoader implements ElementLoader {
   }
 
   @Override
-  public List<LoadResult<JavadocType>> findClassByName(String name) {
+  public Collection<LoadResult<JavadocType>> findClassByName(String name) {
     return apis.stream()
         .flatMap(it -> it.findClassByName(name).stream())
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public Collection<LoadResult<JavadocElement>> findByQualifiedName(QualifiedName name) {
+    return apis.stream()
+        .flatMap(loader -> loader.findByQualifiedName(name).stream())
         .collect(Collectors.toList());
   }
 }
