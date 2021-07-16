@@ -21,6 +21,7 @@ import spoon.javadoc.internal.JavadocInlineTag;
 import spoon.javadoc.internal.JavadocSnippet;
 import spoon.reflect.code.CtJavaDoc;
 import spoon.reflect.code.CtJavaDocTag;
+import spoon.reflect.code.CtJavaDocTag.TagType;
 import spoon.reflect.declaration.CtCompilationUnit;
 import spoon.reflect.declaration.CtImportKind;
 import spoon.reflect.declaration.CtType;
@@ -43,10 +44,16 @@ public class JavadocParser {
 
     List<JavadocCommentTag> tags = new ArrayList<>();
     for (CtJavaDocTag tag : javadoc.getTags()) {
+      String content = tag.getContent();
+      if (tag.getType() == TagType.SEE) {
+        Matcher matcher = LINK_PATTERN.matcher(tag.getContent());
+        content = matcher.replaceFirst("{@link $1$2} $6");
+      }
+
       tags.add(new JavadocCommentTag(
           tag.getRealName(),
           tag.getParam(),
-          fromJavadoc(javadoc, Javadoc.parse(tag.getContent()))
+          fromJavadoc(javadoc, Javadoc.parse(content))
       ));
     }
 
