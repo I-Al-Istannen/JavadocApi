@@ -9,7 +9,8 @@ public interface CommentRenderer {
    * Renders a list of fragments.
    *
    * @param fragments the fragments to render
+   * @param baseUrl the base url to use (empty if none)
    * @return the rendered form
    */
-  String render(List<JavadocCommentFragment> fragments);
+  String render(List<JavadocCommentFragment> fragments, String baseUrl);
 }
