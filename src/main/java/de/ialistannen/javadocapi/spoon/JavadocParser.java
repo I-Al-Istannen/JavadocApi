@@ -131,7 +131,7 @@ public class JavadocParser {
       }
 
       return new JavadocCommentLink(
-          new QualifiedName(qualifiedString),
+          new QualifiedName(qualifiedString, JavadocElementExtractor.getModuleName(reference)),
           label,
           type == Type.LINKPLAIN
       );

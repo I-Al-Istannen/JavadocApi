@@ -18,7 +18,7 @@ class Java8LinkResolverTest {
   @Test
   void className() {
     String link = resolver.resolveLink(
-        new QualifiedName("java.lang.String"),
+        new QualifiedName("java.lang.String", "java.base"),
         "https://foo.com/"
     );
 
@@ -38,7 +38,7 @@ class Java8LinkResolverTest {
   @Test
   void methodNoParams() {
     String link = resolver.resolveLink(
-        new QualifiedName("java.lang.String#length()"),
+        new QualifiedName("java.lang.String#length()", "java.base"),
         "https://foo.com/"
     );
 
@@ -58,7 +58,7 @@ class Java8LinkResolverTest {
   @Test
   void methodNoTwoParams() {
     String link = resolver.resolveLink(
-        new QualifiedName("java.lang.String#codePointCount(int,int)"),
+        new QualifiedName("java.lang.String#codePointCount(int,int)", "java.base"),
         "https://foo.com/"
     );
 

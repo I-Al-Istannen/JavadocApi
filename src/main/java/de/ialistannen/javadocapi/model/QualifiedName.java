@@ -9,9 +9,15 @@ import java.util.Optional;
 public class QualifiedName {
 
   private final String asText;
+  private final String moduleName;
+
+  public QualifiedName(String asText, String moduleName) {
+    this.asText = asText;
+    this.moduleName = moduleName;
+  }
 
   public QualifiedName(String asText) {
-    this.asText = asText;
+    this(asText, null);
   }
 
   /**
@@ -19,10 +25,16 @@ public class QualifiedName {
    */
   public Optional<QualifiedName> getLexicalParent() {
     if (asText.contains("#")) {
-      return Optional.of(new QualifiedName(asText.substring(0, asText.indexOf("#"))));
+      return Optional.of(new QualifiedName(
+          asText.substring(0, asText.indexOf("#")),
+          moduleName
+      ));
     }
     if (asText.contains(".")) {
-      return Optional.of(new QualifiedName(asText.substring(0, asText.lastIndexOf('.'))));
+      return Optional.of(new QualifiedName(
+          asText.substring(0, asText.lastIndexOf('.')),
+          moduleName
+      ));
     }
     return Optional.empty();
   }
@@ -40,6 +52,13 @@ public class QualifiedName {
           .replaceAll("\\(.*\\)", "");
     }
     return asText.substring(asText.lastIndexOf('.') + 1);
+  }
+
+  /**
+   * @return the module name, if any
+   */
+  public Optional<String> getModuleName() {
+    return Optional.ofNullable(moduleName);
   }
 
   /**
@@ -62,6 +81,13 @@ public class QualifiedName {
 
   public String asString() {
     return asText;
+  }
+
+  public String asStringWithModule() {
+    if (moduleName != null) {
+      return moduleName + "/" + asString();
+    }
+    return asString();
   }
 
   @Override

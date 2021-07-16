@@ -44,13 +44,27 @@ public class ConfiguredGson {
         )
         .registerTypeAdapter(
             QualifiedName.class,
-            (JsonSerializer<QualifiedName>) (name, type, context) ->
-                new JsonPrimitive(name.asString())
+            (JsonSerializer<QualifiedName>) (name, type, context) -> {
+              String asText = name.asString();
+              if (name.getModuleName().isPresent()) {
+                asText = name.getModuleName().get() + "/" + asText;
+              }
+              return new JsonPrimitive(asText);
+            }
         )
         .registerTypeAdapter(
             QualifiedName.class,
-            (JsonDeserializer<QualifiedName>) (element, type, context) ->
-                new QualifiedName(element.getAsString())
+            (JsonDeserializer<QualifiedName>) (element, type, context) -> {
+              String moduleName = null;
+              String qualifiedName = element.getAsString();
+
+              if (element.getAsString().contains("/")) {
+                String[] split = element.getAsString().split("/");
+                moduleName = split[0];
+                qualifiedName = split[1];
+              }
+              return new QualifiedName(qualifiedName, moduleName);
+            }
         )
         .create();
   }

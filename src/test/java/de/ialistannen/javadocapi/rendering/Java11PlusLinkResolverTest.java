@@ -18,50 +18,50 @@ class Java11PlusLinkResolverTest {
   @Test
   void className() {
     String link = resolver.resolveLink(
-        new QualifiedName("java.lang.String"),
+        new QualifiedName("java.lang.String", "java.base"),
         "https://foo.com/"
     );
 
-    assertEquals("https://foo.com/java/lang/String.html", link);
+    assertEquals("https://foo.com/java.base/java/lang/String.html", link);
   }
 
   @Test
   void field() {
     String link = resolver.resolveLink(
-        new QualifiedName("java.lang.String#CASE_INSENSITIVE_ORDER"),
+        new QualifiedName("java.lang.String#CASE_INSENSITIVE_ORDER", "java.base"),
         "https://foo.com/"
     );
 
-    assertEquals("https://foo.com/java/lang/String.html#CASE_INSENSITIVE_ORDER", link);
+    assertEquals("https://foo.com/java.base/java/lang/String.html#CASE_INSENSITIVE_ORDER", link);
   }
 
   @Test
   void methodNoParams() {
     String link = resolver.resolveLink(
-        new QualifiedName("java.lang.String#length()"),
+        new QualifiedName("java.lang.String#length()", "java.base"),
         "https://foo.com/"
     );
 
-    assertEquals("https://foo.com/java/lang/String.html#length()", link);
+    assertEquals("https://foo.com/java.base/java/lang/String.html#length()", link);
   }
 
   @Test
   void methodNoOneParam() {
     String link = resolver.resolveLink(
-        new QualifiedName("java.lang.String#charAt(int)"),
+        new QualifiedName("java.lang.String#charAt(int)", "java.base"),
         "https://foo.com/"
     );
 
-    assertEquals("https://foo.com/java/lang/String.html#charAt(int)", link);
+    assertEquals("https://foo.com/java.base/java/lang/String.html#charAt(int)", link);
   }
 
   @Test
   void methodNoTwoParams() {
     String link = resolver.resolveLink(
-        new QualifiedName("java.lang.String#codePointCount(int,int)"),
+        new QualifiedName("java.lang.String#codePointCount(int,int)", "java.base"),
         "https://foo.com/"
     );
 
-    assertEquals("https://foo.com/java/lang/String.html#codePointCount(int,int)", link);
+    assertEquals("https://foo.com/java.base/java/lang/String.html#codePointCount(int,int)", link);
   }
 }

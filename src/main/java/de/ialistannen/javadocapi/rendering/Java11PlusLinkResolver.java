@@ -19,6 +19,10 @@ public class Java11PlusLinkResolver implements LinkResolveStrategy {
       urlPart += ".html";
     }
 
+    if (name.getModuleName().isPresent()) {
+      urlPart = name.getModuleName().get() + "/" + urlPart;
+    }
+
     return baseUrl + "/" + urlPart;
   }
 }

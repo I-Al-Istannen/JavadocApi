@@ -53,8 +53,9 @@ public class SqlStorage {
 
       for (int i = 0; i < elements.size(); i++) {
         JavadocElement element = elements.get(i);
-        statement.setString(1, reverse(element.getQualifiedName().asString()));
-        statement.setString(2, element.getQualifiedName().asString());
+        String fullName = element.getQualifiedName().asStringWithModule();
+        statement.setString(1, reverse(fullName));
+        statement.setString(2, fullName);
         statement.setString(3, ElementType.fromElement(element).name());
         statement.setString(4, gson.toJson(element));
         statement.addBatch();
@@ -113,7 +114,7 @@ public class SqlStorage {
         + "FROM JavadocElements\n"
         + "WHERE qualified_name = ?";
     try (PreparedStatement statement = connection.prepareStatement(query)) {
-      statement.setString(1, name.asString());
+      statement.setString(1, name.asStringWithModule());
       try (ResultSet resultSet = statement.executeQuery()) {
         return parseResults(resultSet);
       }
