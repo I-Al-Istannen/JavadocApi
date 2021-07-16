@@ -6,7 +6,7 @@ import java.util.Optional;
 /**
  * The qualified name of a javadoc element.
  */
-public class QualifiedName extends Identifier {
+public class QualifiedName {
 
   private final String asText;
 
@@ -60,7 +60,6 @@ public class QualifiedName extends Identifier {
     return style == DeclarationStyle.SHORT ? getSimpleName() : asString();
   }
 
-  @Override
   public String asString() {
     return asText;
   }
