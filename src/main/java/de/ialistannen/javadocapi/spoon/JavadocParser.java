@@ -115,21 +115,22 @@ public class JavadocParser {
         return new JavadocCommentInlineTag(Type.LINK, text);
       }
       String className = matcher.group(1);
-      String methodName = matcher.group(3);
+      String elementName = matcher.group(3);
       String parameters = matcher.group(5);
       String label = matcher.group(6);
 
       QualifiedName qualifiedName = qualifyTypeName(reference, className);
-      if (methodName != null) {
-        String memberAppendix = "#" + methodName + "(";
+      if (elementName != null) {
+        String memberAppendix = "#" + elementName;
         if (parameters != null && !parameters.isBlank()) {
+          memberAppendix += "(";
           memberAppendix += Arrays.stream(parameters.split(","))
               .map(it -> it.strip().split(" ")[0])
               .map(it -> qualifyTypeName(reference, it))
               .map(QualifiedName::asString)
               .collect(Collectors.joining(","));
+          memberAppendix += ")";
         }
-        memberAppendix += ")";
 
         qualifiedName = new QualifiedName(
             qualifiedName.asString() + memberAppendix,
@@ -151,6 +152,17 @@ public class JavadocParser {
   }
 
   private QualifiedName qualifyTypeName(CtJavaDoc element, String name) {
+    QualifiedName qualifiedName = qualifyTypeNameNoArray(element, name.replace("[]", ""));
+    if (!name.contains("[]")) {
+      return qualifiedName;
+    }
+    return new QualifiedName(
+        qualifiedName.asString() + "[]",
+        qualifiedName.getModuleName().orElse(null)
+    );
+  }
+
+  private QualifiedName qualifyTypeNameNoArray(CtJavaDoc element, String name) {
     CtType<?> parentType = element.getParent(CtType.class);
     if (parentType != null && !name.isBlank()) {
       Optional<CtTypeReference<?>> type = parentType.getReferencedTypes()
