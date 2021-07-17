@@ -12,6 +12,7 @@ import de.ialistannen.javadocapi.model.types.JavadocType.PossiblyGenericSupertyp
 import de.ialistannen.javadocapi.model.types.JavadocType.Type;
 import de.ialistannen.javadocapi.model.types.JavadocTypeParameter;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Documented;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -193,6 +194,7 @@ public class JavadocElementExtractor extends CtScanner {
   private List<JavadocAnnotation> getAnnotations(CtElement element) {
     return element.getAnnotations()
         .stream()
+        .filter(it -> it.hasAnnotation(Documented.class))
         .map(annotation -> {
           Map<String, String> values = annotation.getValues()
               .entrySet()
