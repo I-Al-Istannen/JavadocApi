@@ -68,5 +68,9 @@ public interface ElementLoader {
     public <R> LoadResult<R> map(Function<T, R> mapper) {
       return new LoadResult<>(mapper.apply(getResult()), getLoader());
     }
+
+    public LoadResult<T> withLoader(ElementLoader loader) {
+      return new LoadResult<>(result, loader);
+    }
   }
 }

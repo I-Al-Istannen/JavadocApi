@@ -344,6 +344,10 @@ public class JavadocElementExtractor extends CtScanner {
       return null;
     }
 
+    if (module.isUnnamedModule()) {
+      return null;
+    }
+
     return module.getSimpleName();
   }
 
