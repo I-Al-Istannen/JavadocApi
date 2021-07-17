@@ -122,7 +122,7 @@ public class JavadocParser {
       QualifiedName qualifiedName = qualifyTypeName(reference, className);
       if (elementName != null) {
         String memberAppendix = "#" + elementName;
-        if (parameters != null && !parameters.isBlank()) {
+        if (parameters != null) {
           memberAppendix += "(";
           memberAppendix += Arrays.stream(parameters.split(","))
               .map(it -> it.strip().split(" ")[0])
