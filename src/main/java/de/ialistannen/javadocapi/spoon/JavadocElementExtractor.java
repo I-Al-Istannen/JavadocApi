@@ -100,6 +100,11 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public void visitCtPackage(CtPackage ctPackage) {
+    if (packageWhitelist.contains("*")) {
+      super.visitCtPackage(ctPackage);
+      return;
+    }
+
     if (packageWhitelist.contains(ctPackage.getQualifiedName())) {
       super.visitCtPackage(ctPackage);
       return;
