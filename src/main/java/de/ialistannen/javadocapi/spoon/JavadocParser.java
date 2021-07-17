@@ -32,7 +32,7 @@ import spoon.reflect.reference.CtTypeReference;
 public class JavadocParser {
 
   private static final Pattern LINK_PATTERN = Pattern.compile(
-      "^([\\w$.]*)(#([\\w.$]*)(\\((.*)\\))?)?( .+)?$"
+      "^([\\w$.]*)(#([\\w.$]*)(\\((.*?)\\))?)?( .+)?$"
   );
 
   public JavadocComment fromCtJavadoc(CtJavaDoc javadoc) {
