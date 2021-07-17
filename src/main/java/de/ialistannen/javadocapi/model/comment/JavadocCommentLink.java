@@ -12,9 +12,9 @@ public class JavadocCommentLink extends JavadocCommentInlineTag {
   public JavadocCommentLink(QualifiedName target, String label, boolean plain) {
     super(
         plain ? Type.LINKPLAIN : Type.LINK,
-        target.asString() + (label != null ? " " + label : "")
+        target.asString() + (label != null ? " " + label.strip() : "")
     );
-    this.label = label;
+    this.label = label != null ? label.strip() : null;
     this.target = target;
     this.plain = plain;
   }

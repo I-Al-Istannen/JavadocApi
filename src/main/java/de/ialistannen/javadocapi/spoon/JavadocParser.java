@@ -45,10 +45,10 @@ public class JavadocParser {
 
     List<JavadocCommentTag> tags = new ArrayList<>();
     for (CtJavaDocTag tag : javadoc.getTags()) {
-      String content = tag.getContent();
+      String content = tag.getContent().replaceAll("[\\s+]", " ");
       if (tag.getType() == TagType.SEE) {
-        Matcher matcher = LINK_PATTERN.matcher(tag.getContent());
-        content = matcher.replaceFirst("{@link $1$2} $6");
+        Matcher matcher = LINK_PATTERN.matcher(content);
+        content = matcher.replaceFirst("{@link $1$2$6}");
       }
 
       tags.add(new JavadocCommentTag(
