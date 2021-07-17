@@ -1,5 +1,7 @@
 package de.ialistannen.javadocapi.spoon;
 
+import static de.ialistannen.javadocapi.spoon.JavadocElementExtractor.getModuleName;
+
 import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.comment.JavadocComment;
 import de.ialistannen.javadocapi.model.comment.JavadocCommentFragment;
@@ -25,7 +27,6 @@ import spoon.reflect.code.CtJavaDocTag.TagType;
 import spoon.reflect.declaration.CtCompilationUnit;
 import spoon.reflect.declaration.CtImportKind;
 import spoon.reflect.declaration.CtType;
-import spoon.reflect.declaration.CtTypeInformation;
 import spoon.reflect.reference.CtTypeReference;
 
 public class JavadocParser {
@@ -118,20 +119,26 @@ public class JavadocParser {
       String parameters = matcher.group(5);
       String label = matcher.group(6);
 
-      String qualifiedString = qualifyTypeName(reference, className);
+      QualifiedName qualifiedName = qualifyTypeName(reference, className);
       if (methodName != null) {
-        qualifiedString += "#" + methodName + "(";
-        if (parameters != null) {
-          qualifiedString += Arrays.stream(parameters.split(","))
+        String memberAppendix = "#" + methodName + "(";
+        if (parameters != null && !parameters.isBlank()) {
+          memberAppendix += Arrays.stream(parameters.split(","))
               .map(it -> it.split(" ")[0])
               .map(it -> qualifyTypeName(reference, it))
+              .map(QualifiedName::asString)
               .collect(Collectors.joining(","));
         }
-        qualifiedString += ")";
+        memberAppendix += ")";
+
+        qualifiedName = new QualifiedName(
+            qualifiedName.asString() + memberAppendix,
+            qualifiedName.getModuleName().orElse(null)
+        );
       }
 
       return new JavadocCommentLink(
-          new QualifiedName(qualifiedString, JavadocElementExtractor.getModuleName(reference)),
+          qualifiedName,
           label,
           type == Type.LINKPLAIN
       );
@@ -143,7 +150,7 @@ public class JavadocParser {
     );
   }
 
-  private String qualifyTypeName(CtJavaDoc element, String name) {
+  private QualifiedName qualifyTypeName(CtJavaDoc element, String name) {
     CtType<?> parentType = element.getParent(CtType.class);
     if (parentType != null && !name.isBlank()) {
       Optional<CtTypeReference<?>> type = parentType.getReferencedTypes()
@@ -151,11 +158,17 @@ public class JavadocParser {
           .filter(it -> it.getQualifiedName().endsWith(name))
           .findAny();
       if (type.isPresent()) {
-        return type.get().getQualifiedName();
+        return new QualifiedName(
+            type.get().getQualifiedName(),
+            getModuleName(type.get().getTypeDeclaration())
+        );
       }
     }
     if (parentType != null && name.isBlank()) {
-      return parentType.getQualifiedName();
+      return new QualifiedName(
+          parentType.getQualifiedName(),
+          getModuleName(parentType)
+      );
     }
 
     CtCompilationUnit parentUnit = element.getPosition().getCompilationUnit();
@@ -176,11 +189,14 @@ public class JavadocParser {
         .findAny()
         .flatMap(ctImport ->
             ctImport.getReferencedTypes()
-            .stream()
-            .filter(it -> it.getSimpleName().equals(name))
-            .findFirst()
-            .map(CtTypeInformation::getQualifiedName)
+                .stream()
+                .filter(it -> it.getSimpleName().equals(name))
+                .findFirst()
+                .map(ctTypeReference -> new QualifiedName(
+                    ctTypeReference.getQualifiedName(),
+                    getModuleName(ctTypeReference.getDeclaration())
+                ))
         )
-        .orElse("" + name);
+        .orElse(new QualifiedName(name, getModuleName(element)));
   }
 }
