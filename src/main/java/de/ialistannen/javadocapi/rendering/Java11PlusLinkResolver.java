@@ -10,14 +10,7 @@ public class Java11PlusLinkResolver implements LinkResolveStrategy {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
     }
 
-    String urlPart = name.asString()
-        .replace(".", "/")
-        .replace("$", ".");
-
-    urlPart = urlPart.replace("#", ".html#");
-    if (!urlPart.contains("#")) {
-      urlPart += ".html";
-    }
+    String urlPart = formatNamePart(name);
 
     if (name.getModuleName().isPresent()) {
       urlPart = name.getModuleName().get() + "/" + urlPart;

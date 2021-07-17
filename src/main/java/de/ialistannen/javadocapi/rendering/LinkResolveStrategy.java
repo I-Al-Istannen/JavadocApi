@@ -12,4 +12,29 @@ public interface LinkResolveStrategy {
    * @return the absolute link
    */
   String resolveLink(QualifiedName name, String baseUrl);
+
+  default String formatNamePart(QualifiedName name) {
+    String urlPart;
+
+    if (!name.asString().contains("#")) {
+      urlPart = name.asString();
+    } else {
+      urlPart = name.asString().substring(0, name.asString().indexOf('#'));
+    }
+
+    urlPart = urlPart
+        .replace(".", "/")
+        .replace("$", ".");
+
+    if (name.asString().contains("#")) {
+      urlPart += "#" + name.asString().substring(name.asString().indexOf("#") + 1);
+    }
+
+    urlPart = urlPart.replace("#", ".html#");
+    if (!urlPart.contains("#")) {
+      urlPart += ".html";
+    }
+
+    return urlPart;
+  }
 }

@@ -10,17 +10,12 @@ public class Java8LinkResolver implements LinkResolveStrategy {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
     }
 
-    String urlPart = name.asString()
-        .replace(".", "/")
-        .replace("$", ".")
+    String urlPart = formatNamePart(name);
+
+    urlPart = urlPart
         .replace("(", "-")
         .replace(")", "-")
         .replace(",", "-");
-
-    urlPart = urlPart.replace("#", ".html#");
-    if (!urlPart.contains("#")) {
-      urlPart += ".html";
-    }
 
     return baseUrl + "/" + urlPart;
   }

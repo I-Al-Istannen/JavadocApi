@@ -48,11 +48,11 @@ class Java11PlusLinkResolverTest {
   @Test
   void methodNoOneParam() {
     String link = resolver.resolveLink(
-        new QualifiedName("java.lang.String#charAt(int)", "java.base"),
+        new QualifiedName("java.lang.String#charAt(java.lang.String)", "java.base"),
         "https://foo.com/"
     );
 
-    assertEquals("https://foo.com/java.base/java/lang/String.html#charAt(int)", link);
+    assertEquals("https://foo.com/java.base/java/lang/String.html#charAt(java.lang.String)", link);
   }
 
   @Test
