@@ -163,6 +163,14 @@ public class JavadocParser {
             getModuleName(type.get().getTypeDeclaration())
         );
       }
+
+      CtType<?> siblingType = parentType.getPackage().getType(name);
+      if (siblingType != null) {
+        return new QualifiedName(
+            siblingType.getQualifiedName(),
+            getModuleName(siblingType)
+        );
+      }
     }
     if (parentType != null && name.isBlank()) {
       return new QualifiedName(
