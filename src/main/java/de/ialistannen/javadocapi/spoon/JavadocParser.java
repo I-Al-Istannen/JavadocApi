@@ -124,7 +124,7 @@ public class JavadocParser {
         String memberAppendix = "#" + methodName + "(";
         if (parameters != null && !parameters.isBlank()) {
           memberAppendix += Arrays.stream(parameters.split(","))
-              .map(it -> it.split(" ")[0])
+              .map(it -> it.strip().split(" ")[0])
               .map(it -> qualifyTypeName(reference, it))
               .map(QualifiedName::asString)
               .collect(Collectors.joining(","));
@@ -155,7 +155,7 @@ public class JavadocParser {
     if (parentType != null && !name.isBlank()) {
       Optional<CtTypeReference<?>> type = parentType.getReferencedTypes()
           .stream()
-          .filter(it -> it.getQualifiedName().endsWith(name))
+          .filter(it -> it.getSimpleName().equals(name) || it.getQualifiedName().equals(name))
           .findAny();
       if (type.isPresent()) {
         return new QualifiedName(

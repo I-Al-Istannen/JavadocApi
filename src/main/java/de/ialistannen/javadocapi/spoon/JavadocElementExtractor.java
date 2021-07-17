@@ -311,6 +311,10 @@ public class JavadocElementExtractor extends CtScanner {
   }
 
   static String getModuleName(CtElement element) {
+    if (element == null) {
+      System.out.println("  Element was null :/");
+      return null;
+    }
     if (element instanceof CtType) {
       switch (((CtType<?>) element).getSimpleName()) {
         case "boolean":
