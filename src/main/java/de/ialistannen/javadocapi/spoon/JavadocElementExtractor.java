@@ -311,8 +311,18 @@ public class JavadocElementExtractor extends CtScanner {
   }
 
   static String getModuleName(CtElement element) {
-    if (element instanceof CtType && ((CtType<?>) element).isPrimitive()) {
-      return null;
+    if (element instanceof CtType) {
+      switch (((CtType<?>) element).getSimpleName()) {
+        case "boolean":
+        case "byte":
+        case "char":
+        case "short":
+        case "int":
+        case "long":
+        case "float":
+        case "double":
+          return null;
+      }
     }
 
     CtModule module = element.getParent(CtModule.class);
