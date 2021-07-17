@@ -124,11 +124,13 @@ public class JavadocParser {
         String memberAppendix = "#" + elementName;
         if (parameters != null) {
           memberAppendix += "(";
-          memberAppendix += Arrays.stream(parameters.split(","))
-              .map(it -> it.strip().split(" ")[0])
-              .map(it -> qualifyTypeName(reference, it))
-              .map(QualifiedName::asString)
-              .collect(Collectors.joining(","));
+          if (!parameters.isBlank()) {
+            memberAppendix += Arrays.stream(parameters.split(","))
+                .map(it -> it.strip().split(" ")[0])
+                .map(it -> qualifyTypeName(reference, it))
+                .map(QualifiedName::asString)
+                .collect(Collectors.joining(","));
+          }
           memberAppendix += ")";
         }
 
