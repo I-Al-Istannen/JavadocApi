@@ -20,6 +20,7 @@
     "java.io",
     "java.lang",
     "java.lang.annotation",
+    "java.lang.constant",
     "java.lang.instrument",
     "java.lang.invoke",
     "java.lang.management",

@@ -194,7 +194,10 @@ public class JavadocElementExtractor extends CtScanner {
   private List<JavadocAnnotation> getAnnotations(CtElement element) {
     return element.getAnnotations()
         .stream()
-        .filter(it -> it.hasAnnotation(Documented.class))
+        .filter(it -> {
+          CtType<? extends Annotation> type = it.getAnnotationType().getTypeDeclaration();
+          return type != null && type.hasAnnotation(Documented.class);
+        })
         .map(annotation -> {
           Map<String, String> values = annotation.getValues()
               .entrySet()
