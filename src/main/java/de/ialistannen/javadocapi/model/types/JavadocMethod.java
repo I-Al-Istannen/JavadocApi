@@ -84,7 +84,7 @@ public class JavadocMethod implements JavadocElement {
     if (!getTypeParameters().isEmpty()) {
       result += getTypeParameters().stream()
           .map(it -> it.getDeclaration(style))
-          .collect(Collectors.joining(" ", "<", "> "));
+          .collect(Collectors.joining(", ", "<", "> "));
     }
 
     result += getReturnType().formatted(style) + " ";
