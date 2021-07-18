@@ -47,7 +47,13 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
                   .toUpperCase(Locale.ROOT)
                   .endsWith(query.getElementName())
           )
-          .filter(it -> (query.getParameters() == null) != it.getResult().isMethod())
+          .filter(it -> {
+            // Filter out methods if user specified a "(", ignore it otherwise
+            if (query.getParameters() != null) {
+              return it.getResult().isMethod();
+            }
+            return true;
+          })
           .collect(Collectors.toList());
 
       if (query.getParameters() == null) {
