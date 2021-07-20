@@ -176,7 +176,7 @@ public class JavadocElementExtractor extends CtScanner {
             getModuleName(f)
         ),
         getModifiers(f),
-        new QualifiedName(f.getType().getQualifiedName(), getModuleName(f)),
+        getPossiblyGenericType(f.getType()),
         getComment(f)
     ));
     reportProgress();

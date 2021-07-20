@@ -10,10 +10,10 @@ public class JavadocField implements JavadocElement {
 
   private final List<String> modifiers;
   private final QualifiedName qualifiedName;
-  private final QualifiedName type;
+  private final PossiblyGenericType type;
   private final JavadocComment comment;
 
-  public JavadocField(QualifiedName qualifiedName, List<String> modifiers, QualifiedName type,
+  public JavadocField(QualifiedName qualifiedName, List<String> modifiers, PossiblyGenericType type,
       JavadocComment comment) {
     this.qualifiedName = qualifiedName;
     this.modifiers = modifiers;
@@ -30,13 +30,13 @@ public class JavadocField implements JavadocElement {
     return qualifiedName;
   }
 
-  public QualifiedName getType() {
+  public PossiblyGenericType getType() {
     return type;
   }
 
   @Override
   public String getDeclaration(DeclarationStyle style) {
-    return type.formatted(style) + " " + qualifiedName.getSimpleName();
+    return type.getDeclaration(style) + " " + qualifiedName.getSimpleName();
   }
 
   @Override
