@@ -8,9 +8,9 @@ import de.ialistannen.javadocapi.model.types.JavadocField;
 import de.ialistannen.javadocapi.model.types.JavadocMethod;
 import de.ialistannen.javadocapi.model.types.JavadocMethod.Parameter;
 import de.ialistannen.javadocapi.model.types.JavadocType;
-import de.ialistannen.javadocapi.model.types.JavadocType.PossiblyGenericSupertype;
 import de.ialistannen.javadocapi.model.types.JavadocType.Type;
 import de.ialistannen.javadocapi.model.types.JavadocTypeParameter;
+import de.ialistannen.javadocapi.model.types.PossiblyGenericType;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
 import java.util.ArrayList;
@@ -140,9 +140,9 @@ public class JavadocElementExtractor extends CtScanner {
     List<Parameter> parameters = m.getParameters()
         .stream()
         .map(it -> new Parameter(
-            new QualifiedName(it.getType().getQualifiedName(), getModuleName(it)),
-            it.getSimpleName())
-        )
+            getPossiblyGenericType(it.getType()),
+            it.getSimpleName()
+        ))
         .collect(Collectors.toList());
 
     List<QualifiedName> thrownTypes = m.getThrownTypes()
@@ -152,7 +152,7 @@ public class JavadocElementExtractor extends CtScanner {
 
     foundElements.add(new JavadocMethod(
         executableRefToQualifiedName(m.getDeclaringType(), m.getReference()),
-        new QualifiedName(m.getType().getQualifiedName(), getModuleName(m)),
+        getPossiblyGenericType(m.getType()),
         getModifiers(m),
         parameters,
         thrownTypes,
@@ -228,12 +228,12 @@ public class JavadocElementExtractor extends CtScanner {
         .map(it -> new QualifiedName(it, getModuleName(ctType)))
         .forEach(memberNames::add);
 
-    List<PossiblyGenericSupertype> superInterfaces = ctType.getSuperInterfaces()
+    List<PossiblyGenericType> superInterfaces = ctType.getSuperInterfaces()
         .stream()
         .map(this::fromSuperTypeReference)
         .filter(Objects::nonNull)
         .collect(Collectors.toList());
-    PossiblyGenericSupertype superClass = fromSuperTypeReference(ctType.getSuperclass());
+    PossiblyGenericType superClass = fromSuperTypeReference(ctType.getSuperclass());
 
     return new JavadocType(
         new QualifiedName(ctType.getQualifiedName(), getModuleName(ctType)),
@@ -280,12 +280,13 @@ public class JavadocElementExtractor extends CtScanner {
     );
   }
 
-  private PossiblyGenericSupertype fromSuperTypeReference(CtTypeReference<?> reference) {
+  private PossiblyGenericType fromSuperTypeReference(CtTypeReference<?> reference) {
     if (reference == null) {
       return null;
     }
-    return new PossiblyGenericSupertype(
-        new QualifiedName(reference.getQualifiedName(), getModuleName(reference.getTypeDeclaration())),
+    return new PossiblyGenericType(
+        new QualifiedName(reference.getQualifiedName(),
+            getModuleName(reference.getTypeDeclaration())),
         getTypeParameters(reference.getTypeDeclaration())
     );
   }
@@ -299,6 +300,16 @@ public class JavadocElementExtractor extends CtScanner {
         .map(Object::toString)
         .map(JavadocTypeParameter::new)
         .collect(Collectors.toList());
+  }
+
+  private PossiblyGenericType getPossiblyGenericType(CtTypeReference<?> typeReference) {
+    return new PossiblyGenericType(
+        new QualifiedName(typeReference.getQualifiedName(), getModuleName(typeReference)),
+        typeReference.getActualTypeArguments().stream()
+            .map(Object::toString)
+            .map(JavadocTypeParameter::new)
+            .collect(Collectors.toList())
+    );
   }
 
   private JavadocComment getComment(CtElement ctType) {

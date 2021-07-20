@@ -17,14 +17,14 @@ public class JavadocType implements JavadocElement {
   private final List<JavadocAnnotation> annotations;
   private final List<JavadocTypeParameter> typeParameters;
   private final Type type;
-  private final List<PossiblyGenericSupertype> superInterfaces;
-  private final PossiblyGenericSupertype superClass;
+  private final List<PossiblyGenericType> superInterfaces;
+  private final PossiblyGenericType superClass;
 
   public JavadocType(QualifiedName name, List<String> modifiers,
       List<QualifiedName> members, JavadocComment comment, List<JavadocAnnotation> annotations,
       List<JavadocTypeParameter> typeParameters, Type type,
-      List<PossiblyGenericSupertype> superInterfaces,
-      PossiblyGenericSupertype superClass) {
+      List<PossiblyGenericType> superInterfaces,
+      PossiblyGenericType superClass) {
     this.name = name;
     this.modifiers = modifiers;
     this.members = List.copyOf(members);
@@ -36,11 +36,11 @@ public class JavadocType implements JavadocElement {
     this.superClass = superClass;
   }
 
-  public List<PossiblyGenericSupertype> getSuperInterfaces() {
+  public List<PossiblyGenericType> getSuperInterfaces() {
     return superInterfaces;
   }
 
-  public PossiblyGenericSupertype getSuperClass() {
+  public PossiblyGenericType getSuperClass() {
     return superClass;
   }
 
@@ -112,37 +112,6 @@ public class JavadocType implements JavadocElement {
   @Override
   public String toString() {
     return type + " " + name;
-  }
-
-  public static class PossiblyGenericSupertype {
-
-    private final QualifiedName type;
-    private final List<JavadocTypeParameter> parameters;
-
-    public PossiblyGenericSupertype(QualifiedName type, List<JavadocTypeParameter> parameters) {
-      this.type = type;
-      this.parameters = parameters;
-    }
-
-    public QualifiedName getType() {
-      return type;
-    }
-
-    public List<JavadocTypeParameter> getParameters() {
-      return parameters;
-    }
-
-    public String getDeclaration(DeclarationStyle style) {
-      String result = getType().formatted(style);
-
-      if (!getParameters().isEmpty()) {
-        result += getParameters().stream()
-            .map(it -> it.getDeclaration(style))
-            .collect(Collectors.joining(", ", "<", ">"));
-      }
-
-      return result;
-    }
   }
 
   public enum Type {

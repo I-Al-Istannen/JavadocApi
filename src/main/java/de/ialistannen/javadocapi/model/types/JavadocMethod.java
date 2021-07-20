@@ -12,14 +12,14 @@ public class JavadocMethod implements JavadocElement {
 
   private final List<String> modifiers;
   private final QualifiedName name;
-  private final QualifiedName returnType;
+  private final PossiblyGenericType returnType;
   private final List<Parameter> parameters;
   private final List<QualifiedName> thrownTypes;
   private final List<JavadocAnnotation> annotations;
   private final JavadocComment comment;
   private final List<JavadocTypeParameter> typeParameters;
 
-  public JavadocMethod(QualifiedName name, QualifiedName returnType, List<String> modifiers,
+  public JavadocMethod(QualifiedName name, PossiblyGenericType returnType, List<String> modifiers,
       List<Parameter> parameters, List<QualifiedName> thrownTypes,
       List<JavadocAnnotation> annotations, List<JavadocTypeParameter> typeParameters,
       JavadocComment comment) {
@@ -37,7 +37,7 @@ public class JavadocMethod implements JavadocElement {
     return modifiers;
   }
 
-  public QualifiedName getReturnType() {
+  public PossiblyGenericType getReturnType() {
     return returnType;
   }
 
@@ -87,12 +87,12 @@ public class JavadocMethod implements JavadocElement {
           .collect(Collectors.joining(", ", "<", "> "));
     }
 
-    result += getReturnType().formatted(style) + " ";
+    result += getReturnType().getDeclaration(style) + " ";
     result += getQualifiedName().getSimpleName();
 
     result += "(";
     result += getParameters().stream()
-        .map(it -> it.getType().formatted(style) + " " + it.getName())
+        .map(it -> it.getType().getDeclaration(style) + " " + it.getName())
         .collect(Collectors.joining(", "));
     result += ")";
 
@@ -113,15 +113,15 @@ public class JavadocMethod implements JavadocElement {
 
   public static class Parameter {
 
-    private final QualifiedName type;
+    private final PossiblyGenericType type;
     private final String name;
 
-    public Parameter(QualifiedName type, String name) {
+    public Parameter(PossiblyGenericType type, String name) {
       this.type = type;
       this.name = name;
     }
 
-    public QualifiedName getType() {
+    public PossiblyGenericType getType() {
       return type;
     }
 
