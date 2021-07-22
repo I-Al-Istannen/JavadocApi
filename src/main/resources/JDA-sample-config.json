@@ -1,0 +1,7 @@
+{
+  "outputPath": "target/JDA-Index.db",
+  "resourcePaths": ["/tmp/JDA/src/main/java"],
+  "allowedPackages": [
+    "*"
+  ]
+}
