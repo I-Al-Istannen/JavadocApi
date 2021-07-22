@@ -3,6 +3,10 @@ package de.ialistannen.javadocapi.spoon;
 import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.comment.JavadocComment;
+import de.ialistannen.javadocapi.model.types.AnnotationValue;
+import de.ialistannen.javadocapi.model.types.AnnotationValue.ListAnnotationValue;
+import de.ialistannen.javadocapi.model.types.AnnotationValue.PrimitiveAnnotationValue;
+import de.ialistannen.javadocapi.model.types.AnnotationValue.QualifiedAnnotationValue;
 import de.ialistannen.javadocapi.model.types.JavadocAnnotation;
 import de.ialistannen.javadocapi.model.types.JavadocField;
 import de.ialistannen.javadocapi.model.types.JavadocMethod;
@@ -22,7 +26,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import spoon.reflect.code.BinaryOperatorKind;
+import spoon.reflect.code.CtBinaryOperator;
+import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtJavaDoc;
+import spoon.reflect.code.CtLiteral;
+import spoon.reflect.code.CtNewArray;
+import spoon.reflect.code.CtVariableAccess;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtElement;
@@ -39,6 +49,7 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.reference.CtVariableReference;
 import spoon.reflect.visitor.CtScanner;
 
 public class JavadocElementExtractor extends CtScanner {
@@ -199,12 +210,12 @@ public class JavadocElementExtractor extends CtScanner {
           return type != null && type.hasAnnotation(Documented.class);
         })
         .map(annotation -> {
-          Map<String, String> values = annotation.getValues()
+          Map<String, AnnotationValue> values = annotation.getValues()
               .entrySet()
               .stream()
               .collect(Collectors.toMap(
                   Entry::getKey,
-                  it -> it.getValue().toString()
+                  it -> getAnnotationValue(it.getValue())
               ));
           return new JavadocAnnotation(
               new QualifiedName(annotation.getType().getQualifiedName(), getModuleName(element)),
@@ -212,6 +223,45 @@ public class JavadocElementExtractor extends CtScanner {
           );
         })
         .collect(Collectors.toList());
+  }
+
+  private AnnotationValue getAnnotationValue(CtExpression<?> value) {
+    if (value instanceof CtNewArray<?>) {
+      return new ListAnnotationValue(
+          ((CtNewArray<?>) value).getElements()
+              .stream()
+              .map(this::getAnnotationValue)
+              .collect(Collectors.toList())
+      );
+    }
+
+    if (value instanceof CtVariableAccess<?>) {
+      CtVariableAccess<?> variableAccess = (CtVariableAccess<?>) value;
+      CtVariableReference<?> variable = variableAccess.getVariable();
+      return new QualifiedAnnotationValue(
+          new QualifiedName(
+              variableAccess.getType().getQualifiedName() + "#" + variable.getSimpleName(),
+              getModuleName(value.getType().getTypeDeclaration())
+          )
+      );
+    }
+
+    if (value instanceof CtLiteral) {
+      return new PrimitiveAnnotationValue(value.toString());
+    }
+
+    if (value instanceof CtBinaryOperator) {
+      CtBinaryOperator<?> operator = (CtBinaryOperator<?>) value;
+      if (operator.getKind() == BinaryOperatorKind.PLUS) {
+        return new PrimitiveAnnotationValue(
+            operator.getLeftHandOperand().toString() + operator.getRightHandOperand().toString()
+        );
+      }
+    }
+
+    throw new IllegalArgumentException(
+        "Unknown annotation value: " + value.getClass() + " " + value
+    );
   }
 
   private <T> JavadocType forCtType(CtType<T> ctType, JavadocType.Type type) {

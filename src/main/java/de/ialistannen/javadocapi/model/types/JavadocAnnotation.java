@@ -9,9 +9,9 @@ import java.util.stream.Collectors;
 public class JavadocAnnotation {
 
   private final QualifiedName type;
-  private final Map<String, String> values;
+  private final Map<String, AnnotationValue> values;
 
-  public JavadocAnnotation(QualifiedName type, Map<String, String> values) {
+  public JavadocAnnotation(QualifiedName type, Map<String, AnnotationValue> values) {
     this.type = type;
     this.values = values;
   }
@@ -20,7 +20,7 @@ public class JavadocAnnotation {
     return type;
   }
 
-  public Map<String, String> getValues() {
+  public Map<String, AnnotationValue> getValues() {
     return Collections.unmodifiableMap(values);
   }
 
@@ -31,7 +31,7 @@ public class JavadocAnnotation {
       result += "(";
       result += getValues().entrySet()
           .stream()
-          .map(it -> it.getKey() + " = " + it.getValue())
+          .map(it -> it.getKey() + " = " + it.getValue().getDeclaration(style))
           .collect(Collectors.joining(", "));
       result += ")";
     }

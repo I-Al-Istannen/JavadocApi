@@ -2,7 +2,9 @@ package de.ialistannen.javadocapi.storage;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
@@ -11,7 +13,13 @@ import de.ialistannen.javadocapi.model.comment.JavadocCommentFragment;
 import de.ialistannen.javadocapi.model.comment.JavadocCommentInlineTag;
 import de.ialistannen.javadocapi.model.comment.JavadocCommentLink;
 import de.ialistannen.javadocapi.model.comment.JavadocCommentText;
+import de.ialistannen.javadocapi.model.types.AnnotationValue;
+import de.ialistannen.javadocapi.model.types.AnnotationValue.ListAnnotationValue;
+import de.ialistannen.javadocapi.model.types.AnnotationValue.PrimitiveAnnotationValue;
+import de.ialistannen.javadocapi.model.types.AnnotationValue.QualifiedAnnotationValue;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class ConfiguredGson {
 
@@ -66,6 +74,54 @@ public class ConfiguredGson {
               return new QualifiedName(qualifiedName, moduleName);
             }
         )
+        .registerTypeAdapter(
+            AnnotationValue.class,
+            (JsonSerializer<AnnotationValue>) (value, type, context) -> {
+              if (value instanceof PrimitiveAnnotationValue) {
+                return new JsonPrimitive(((PrimitiveAnnotationValue) value).getValue());
+              }
+              if (value instanceof QualifiedAnnotationValue) {
+                JsonObject object = new JsonObject();
+                object.add("name", context.serialize(((QualifiedAnnotationValue) value).getName()));
+                return object;
+              }
+              if (!(value instanceof ListAnnotationValue)) {
+                throw new IllegalArgumentException(
+                    "Unknown annotation value " + type + " " + value
+                );
+              }
+              JsonArray array = new JsonArray();
+
+              for (AnnotationValue annotationValue : ((ListAnnotationValue) value).getValues()) {
+                array.add(context.serialize(annotationValue));
+              }
+
+              return array;
+            }
+        )
+        .registerTypeAdapter(
+            AnnotationValue.class,
+            (JsonDeserializer<AnnotationValue>) (element, type, context) -> {
+              if (element.isJsonPrimitive()) {
+                return new PrimitiveAnnotationValue(element.getAsString());
+              }
+              if (element.isJsonObject()) {
+                return new QualifiedAnnotationValue(
+                    context.deserialize(
+                        element.getAsJsonObject().get("name"),
+                        QualifiedName.class
+                    )
+                );
+              }
+
+              List<AnnotationValue> values = new ArrayList<>();
+              for (JsonElement jsonElement : element.getAsJsonArray()) {
+                values.add(context.deserialize(jsonElement, AnnotationValue.class));
+              }
+
+              return new ListAnnotationValue(values);
+            }
+        )
         .create();
   }
 
@@ -89,6 +145,29 @@ public class ConfiguredGson {
           .filter(it -> it.elementClass.isInstance(element))
           .findFirst()
           .orElseThrow(() -> new IllegalArgumentException("Unknown fragment type " + element));
+    }
+  }
+
+  private enum AnnotationValueType {
+    PRIMITIVE(PrimitiveAnnotationValue.class),
+    QUALIFIED(QualifiedAnnotationValue.class),
+    LIST(ListAnnotationValue.class);
+
+    private final Class<? extends AnnotationValue> valueClass;
+
+    AnnotationValueType(Class<? extends AnnotationValue> elementClass) {
+      this.valueClass = elementClass;
+    }
+
+    public Class<? extends AnnotationValue> getValueClass() {
+      return valueClass;
+    }
+
+    public static AnnotationValueType fromValue(AnnotationValue element) {
+      return Arrays.stream(values())
+          .filter(it -> it.valueClass.isInstance(element))
+          .findFirst()
+          .orElseThrow(() -> new IllegalArgumentException("Unknown annotation type " + element));
     }
   }
 }
