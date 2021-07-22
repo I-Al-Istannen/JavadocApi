@@ -1,0 +1,7 @@
+{
+  "outputPath": "target/Paper-Api-Index.db",
+  "resourcePaths": ["/tmp/Paper/Paper-API/src/main/java"],
+  "allowedPackages": [
+    "*"
+  ]
+}
