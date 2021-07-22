@@ -1,0 +1,7 @@
+{
+  "outputPath": "target/Ourself-Index.db",
+  "resourcePaths": ["src/main/java"],
+  "allowedPackages": [
+    "de.ialistannen.javadocapi"
+  ]
+}
