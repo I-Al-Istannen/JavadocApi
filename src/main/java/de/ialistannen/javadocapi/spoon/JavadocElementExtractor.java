@@ -184,7 +184,7 @@ public class JavadocElementExtractor extends CtScanner {
     foundElements.add(new JavadocField(
         new QualifiedName(
             f.getDeclaringType().getQualifiedName() + "#" + f.getSimpleName(),
-            getModuleName(f)
+            getModuleName(f.getDeclaringType())
         ),
         getModifiers(f),
         getPossiblyGenericType(f.getType()),
@@ -218,7 +218,10 @@ public class JavadocElementExtractor extends CtScanner {
                   it -> getAnnotationValue(it.getValue())
               ));
           return new JavadocAnnotation(
-              new QualifiedName(annotation.getType().getQualifiedName(), getModuleName(element)),
+              new QualifiedName(
+                  annotation.getType().getQualifiedName(),
+                  getModuleName(annotation.getType().getTypeDeclaration())
+              ),
               values
           );
         })
@@ -241,7 +244,7 @@ public class JavadocElementExtractor extends CtScanner {
       return new QualifiedAnnotationValue(
           new QualifiedName(
               variableAccess.getType().getQualifiedName() + "#" + variable.getSimpleName(),
-              getModuleName(value.getType().getTypeDeclaration())
+              getModuleName(variableAccess.getType().getTypeDeclaration())
           )
       );
     }
@@ -274,8 +277,10 @@ public class JavadocElementExtractor extends CtScanner {
     ctType.getAllFields()
         .stream()
         .filter(it -> it.getFieldDeclaration().isProtected() || it.getFieldDeclaration().isPublic())
-        .map(it -> it.getDeclaringType().getQualifiedName() + "#" + it.getSimpleName())
-        .map(it -> new QualifiedName(it, getModuleName(ctType)))
+        .map(it -> new QualifiedName(
+            it.getDeclaringType().getQualifiedName() + "#" + it.getSimpleName(),
+            getModuleName(it.getDeclaringType().getTypeDeclaration())
+        ))
         .forEach(memberNames::add);
 
     List<PossiblyGenericType> superInterfaces = ctType.getSuperInterfaces()
@@ -426,6 +431,9 @@ public class JavadocElementExtractor extends CtScanner {
     }
 
     String ownerName = ref.getDeclaringType().getQualifiedName();
-    return new QualifiedName(ownerName + "#" + signature, getModuleName(owner));
+    return new QualifiedName(
+        ownerName + "#" + signature,
+        getModuleName(ref.getDeclaringType().getTypeDeclaration()
+    ));
   }
 }
