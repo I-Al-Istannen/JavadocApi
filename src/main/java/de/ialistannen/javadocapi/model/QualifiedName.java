@@ -1,6 +1,7 @@
 package de.ialistannen.javadocapi.model;
 
 import de.ialistannen.javadocapi.model.JavadocElement.DeclarationStyle;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -93,5 +94,23 @@ public class QualifiedName {
   @Override
   public String toString() {
     return '{' + asText + '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    QualifiedName that = (QualifiedName) o;
+    return Objects.equals(asText, that.asText) && Objects.equals(moduleName,
+        that.moduleName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(asText, moduleName);
   }
 }

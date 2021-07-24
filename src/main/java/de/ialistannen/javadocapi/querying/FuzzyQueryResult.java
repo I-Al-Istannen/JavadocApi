@@ -2,6 +2,7 @@ package de.ialistannen.javadocapi.querying;
 
 import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.storage.ElementLoader;
+import java.util.Objects;
 
 public class FuzzyQueryResult implements QueryResult {
 
@@ -35,5 +36,23 @@ public class FuzzyQueryResult implements QueryResult {
       return "\033[36m" + qualifiedName.asString() + "\033[0m";
     }
     return qualifiedName.asString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    FuzzyQueryResult that = (FuzzyQueryResult) o;
+    return exact == that.exact && Objects.equals(qualifiedName, that.qualifiedName)
+        && Objects.equals(loader, that.loader);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(exact, qualifiedName, loader);
   }
 }
