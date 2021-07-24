@@ -72,7 +72,7 @@ public class HtmlCommentRender implements CommentRenderer {
         case CODE -> {
           String result = codeOpenTag + tag.getArgument().orElse("") + "</code>";
           if (result.lines().count() > 1) {
-            result = "<pre>" + result + "</pre>";
+            result = "<pre><code>" + result + "</code></pre>";
           }
           yield result;
         }
