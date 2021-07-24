@@ -1,0 +1,7 @@
+{
+  "outputPath": "target/Junit-Index.db",
+  "resourcePaths": ["/tmp/Junit.zip"],
+  "allowedPackages": [
+    "*"
+  ]
+}
