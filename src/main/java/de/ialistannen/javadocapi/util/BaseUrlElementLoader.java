@@ -27,8 +27,16 @@ public class BaseUrlElementLoader implements ElementLoader {
   }
 
   @Override
-  public Collection<LoadResult<JavadocType>> findClassByName(String s) {
-    return delegate.findClassByName(s)
+  public Collection<LoadResult<JavadocType>> findClassByName(String name) {
+    return delegate.findClassByName(name)
+        .stream()
+        .map(it -> it.withLoader(this))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public Collection<LoadResult<JavadocElement>> findElementByName(String name) {
+    return delegate.findElementByName(name)
         .stream()
         .map(it -> it.withLoader(this))
         .collect(Collectors.toList());

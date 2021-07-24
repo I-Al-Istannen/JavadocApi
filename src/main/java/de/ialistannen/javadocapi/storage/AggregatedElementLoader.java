@@ -34,6 +34,13 @@ public class AggregatedElementLoader implements ElementLoader {
   }
 
   @Override
+  public Collection<LoadResult<JavadocElement>> findElementByName(String name) {
+    return apis.stream()
+        .flatMap(it -> it.findElementByName(name).stream())
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public Collection<LoadResult<JavadocElement>> findByQualifiedName(QualifiedName name) {
     return apis.stream()
         .flatMap(loader -> loader.findByQualifiedName(name).stream())

@@ -15,8 +15,19 @@ public interface ElementLoader {
   Collection<LoadResult<JavadocElement>> findAll();
 
   /**
-   * Searchs for a class by its name. The name can be an arbitrary substring of the name anchored at
-   * the end:
+   * Searchs for a class by its name. This is a specialized version of {@link
+   * #findElementByName(String)}.
+   *
+   * @param name the name of the class you are searching for
+   * @return a list with all javadoc elements matching the class filter
+   * @throws FetchException if an error occurs
+   * @see #findElementByName(String)
+   */
+  Collection<LoadResult<JavadocType>> findClassByName(String name);
+
+  /**
+   * Searchs for an element by its name. The name can be an arbitrary substring of the name anchored
+   * at the end:
    *
    * <ul>
    *   <li>{@code String}</li>
@@ -29,7 +40,7 @@ public interface ElementLoader {
    * @return a list with all javadoc elements matching the class filter
    * @throws FetchException if an error occurs
    */
-  Collection<LoadResult<JavadocType>> findClassByName(String name);
+  Collection<LoadResult<JavadocElement>> findElementByName(String name);
 
   /**
    * Finds an element by its qualified name. This might not be unique if multiple loaders have the

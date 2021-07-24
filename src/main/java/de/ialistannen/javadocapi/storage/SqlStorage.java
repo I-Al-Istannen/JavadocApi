@@ -39,11 +39,16 @@ public class SqlStorage {
         + "    qualified_name          VARCHAR(40) PRIMARY KEY,\n"
         + "    type                    VARCHAR(10) NOT NULL,\n"
         + "    data                    VARCHAR(100) NOT NULL\n"
-        + ");"
-        + "CREATE UNIQUE INDEX `REV_QUALIFIED_INDEX`\n"
-        + "  ON JavadocElements (reversed_qualified_name COLLATE NOCASE)";
+        + ");";
 
     try (PreparedStatement preparedStatement = connection.prepareStatement(createTable)) {
+      preparedStatement.execute();
+    }
+
+    String createIndex = "CREATE INDEX `reverse_name` ON JavadocElements (\n"
+        + "  reversed_qualified_name COLLATE NOCASE\n"
+        + ");";
+    try (PreparedStatement preparedStatement = connection.prepareStatement(createIndex)) {
       preparedStatement.execute();
     }
 
@@ -54,7 +59,11 @@ public class SqlStorage {
       for (int i = 0; i < elements.size(); i++) {
         JavadocElement element = elements.get(i);
         String fullName = element.getQualifiedName().asStringWithModule();
-        statement.setString(1, reverse(fullName));
+        String fullWithoutParams =
+            fullName.contains("(")
+                ? fullName.substring(0, fullName.indexOf("("))
+                : fullName;
+        statement.setString(1, reverse(fullWithoutParams));
         statement.setString(2, fullName);
         statement.setString(3, ElementType.fromElement(element).name());
         statement.setString(4, gson.toJson(element));
@@ -91,11 +100,24 @@ public class SqlStorage {
     return elements;
   }
 
+  protected List<JavadocElement> findElementByName(Connection connection, String name)
+      throws SQLException {
+    String query = "SELECT * "
+        + "FROM JavadocElements\n"
+        + "WHERE reversed_qualified_name LIKE ?";
+    try (PreparedStatement statement = connection.prepareStatement(query)) {
+      statement.setString(1, reverse(name) + "%");
+      try (ResultSet resultSet = statement.executeQuery()) {
+        return parseResults(resultSet);
+      }
+    }
+  }
+
   protected List<JavadocType> findClassByName(Connection connection, String name)
       throws SQLException {
     String query = "SELECT * "
         + "FROM JavadocElements\n"
-        + "WHERE reversed_qualified_name LIKE ? AND qualified_name NOT LIKE '%#%'";
+        + "WHERE reversed_qualified_name LIKE ? AND type = 'TYPE'";
     try (PreparedStatement statement = connection.prepareStatement(query)) {
       statement.setString(1, reverse(name) + "%");
       try (ResultSet resultSet = statement.executeQuery()) {

@@ -58,6 +58,14 @@ public class SqliteStorage extends SqlStorage implements ElementLoader {
   }
 
   @Override
+  public Collection<LoadResult<JavadocElement>> findElementByName(String name) {
+    return withConnection(connection -> super.findElementByName(connection, name)
+        .stream()
+        .map(element -> new LoadResult<>(element, this))
+        .collect(Collectors.toList()));
+  }
+
+  @Override
   public Collection<LoadResult<JavadocElement>> findByQualifiedName(QualifiedName name) {
     return withConnection(connection -> super.findByQualifiedName(connection, name))
         .stream()

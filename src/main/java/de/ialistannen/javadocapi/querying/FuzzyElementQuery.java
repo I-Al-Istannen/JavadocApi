@@ -1,5 +1,6 @@
 package de.ialistannen.javadocapi.querying;
 
+import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.types.JavadocType;
 import de.ialistannen.javadocapi.storage.ElementLoader;
@@ -23,6 +24,34 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
       return List.of();
     }
 
+    if (query.getClassName() == null) {
+      return findNonClassElementByName(queryApi, query);
+    }
+
+    return findElementsFromClass(queryApi, query);
+  }
+
+  private List<FuzzyQueryResult> findNonClassElementByName(ElementLoader queryApi, Query query) {
+    Collection<LoadResult<QualifiedName>> potentialElements = queryApi
+        .findElementByName(query.getElementName())
+        .stream()
+        .filter(it -> !(it.getResult() instanceof JavadocType))
+        .map(it -> it.map(JavadocElement::getQualifiedName))
+        .collect(Collectors.toList());
+
+    if (query.getParameters() == null) {
+      return potentialElements.stream()
+          .map(it -> toResult(query, it))
+          .collect(Collectors.toList());
+    }
+
+    return potentialElements.stream()
+        .filter(it -> fuzzyMatchParameters(query.getParameters(), it.getResult()))
+        .map(it -> toResult(query, it))
+        .collect(Collectors.toList());
+  }
+
+  private List<FuzzyQueryResult> findElementsFromClass(ElementLoader queryApi, Query query) {
     Collection<LoadResult<JavadocType>> potentialClasses = queryApi.findClassByName(
         query.getClassName()
     );
@@ -77,7 +106,7 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
         .fromString(actual.asString().toUpperCase(Locale.ROOT))
         .getParameters();
 
-    if (query.size() > actualParameterTypes.size()) {
+    if (actualParameterTypes == null || query.size() > actualParameterTypes.size()) {
       return false;
     }
     for (int i = 0; i < query.size(); i++) {
@@ -132,6 +161,19 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
     public static Query fromString(String queryString) {
       String query = queryString.strip().replaceAll("\\s+", " ");
 
+      if (query.startsWith("#")) {
+        query = query.substring(1);
+        if (!query.contains("(")) {
+          return new Query(null, query, null);
+        }
+        String methodName = query.substring(0, query.indexOf("("));
+        String parameterString = query.substring(methodName.length())
+            .replace("(", "")
+            .replace(")", "");
+
+        return new Query(null, methodName, extractParameters(parameterString));
+      }
+
       if (query.matches("^[\\w.$]+$")) {
         return new Query(query, null, null);
       }
@@ -148,17 +190,21 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
       String methodName = matcher.group(2).strip();
       String parameterString = matcher.group(3).strip();
 
+      return new Query(className, methodName, extractParameters(parameterString));
+    }
+
+    private static List<String> extractParameters(String parameterString) {
       if (parameterString.isEmpty()) {
-        return new Query(className, methodName, List.of());
+        return List.of();
       }
-      matcher = PARAMETER_PATTERN.matcher(parameterString);
+      Matcher matcher = PARAMETER_PATTERN.matcher(parameterString);
       List<String> parameters = new ArrayList<>();
 
       while (matcher.find()) {
         parameters.add(matcher.group(1).strip());
       }
 
-      return new Query(className, methodName, parameters);
+      return parameters;
     }
 
     public boolean exactToReference(Query reference) {
@@ -168,8 +214,10 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
       if ((getElementName() == null) != (reference.getElementName() == null)) {
         return false;
       }
-      if (!classMatchWithReference(getClassName(), reference.getClassName())) {
-        return false;
+      if (getClassName() != null) {
+        if (!classMatchWithReference(getClassName(), reference.getClassName())) {
+          return false;
+        }
       }
 
       if (getElementName() == null) {
