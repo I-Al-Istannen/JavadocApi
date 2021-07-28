@@ -35,6 +35,7 @@ import spoon.reflect.code.CtNewArray;
 import spoon.reflect.code.CtVariableAccess;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
+import spoon.reflect.declaration.CtConstructor;
 import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtEnum;
 import spoon.reflect.declaration.CtExecutable;
@@ -143,12 +144,31 @@ public class JavadocElementExtractor extends CtScanner {
   }
 
   @Override
+  public <T> void visitCtConstructor(CtConstructor<T> c) {
+    if (!c.isPublic() && !c.isProtected()) {
+      return;
+    }
+
+    handleExecutable(c, c, c);
+    reportProgress();
+    super.visitCtConstructor(c);
+  }
+
+  @Override
   public <T> void visitCtMethod(CtMethod<T> m) {
     if (!m.isPublic() && !m.isProtected()) {
       return;
     }
 
-    List<Parameter> parameters = m.getParameters()
+    handleExecutable(m, m, m);
+    reportProgress();
+    super.visitCtMethod(m);
+  }
+
+  private void handleExecutable(
+      CtExecutable<?> executable, CtFormalTypeDeclarer formalTypeDeclarer, CtModifiable modifiable
+  ) {
+    List<Parameter> parameters = executable.getParameters()
         .stream()
         .map(it -> new Parameter(
             getPossiblyGenericType(it.getType()),
@@ -156,23 +176,22 @@ public class JavadocElementExtractor extends CtScanner {
         ))
         .collect(Collectors.toList());
 
-    List<QualifiedName> thrownTypes = m.getThrownTypes()
+    List<QualifiedName> thrownTypes = executable.getThrownTypes()
         .stream()
         .map(it -> new QualifiedName(it.getQualifiedName(), getModuleName(it)))
         .collect(Collectors.toList());
 
     foundElements.add(new JavadocMethod(
-        executableRefToQualifiedName(m.getDeclaringType(), m.getReference()),
-        getPossiblyGenericType(m.getType()),
-        getModifiers(m),
+        executableRefToQualifiedName(formalTypeDeclarer.getDeclaringType(),
+            executable.getReference()),
+        getPossiblyGenericType(executable.getType()),
+        getModifiers(modifiable),
         parameters,
         thrownTypes,
-        getAnnotations(m),
-        getTypeParameters(m),
-        getComment(m)
+        getAnnotations(executable),
+        getTypeParameters(formalTypeDeclarer),
+        getComment(executable)
     ));
-    reportProgress();
-    super.visitCtMethod(m);
   }
 
   @Override
@@ -311,11 +330,9 @@ public class JavadocElementExtractor extends CtScanner {
       System.out.println(e.getClass() + " " + e.getMessage());
       return false;
     }
-    if (ref.getSimpleName().isEmpty() || ref.getSimpleName().equals("<init>")) {
+    if (ref.getSimpleName().isEmpty()) {
       // If ref has no name ref surely wasn't important
-      // (Should only filter out static initializer blocks)
-      // And instance-initializer blocks are called "init". I have no idea why the static ones
-      // aren't called "clinit" in spoon, but I maybe don't want to know the answer.
+      // Apparently initializer blocks match this.
       return false;
     }
     if (executable == null) {
@@ -359,7 +376,10 @@ public class JavadocElementExtractor extends CtScanner {
 
   private PossiblyGenericType getPossiblyGenericType(CtTypeReference<?> typeReference) {
     return new PossiblyGenericType(
-        new QualifiedName(typeReference.getQualifiedName(), getModuleName(typeReference)),
+        new QualifiedName(
+            typeReference.getQualifiedName(),
+            getModuleName(typeReference.getTypeDeclaration())
+        ),
         typeReference.getActualTypeArguments().stream()
             .map(Object::toString)
             .map(JavadocTypeParameter::new)
@@ -434,6 +454,6 @@ public class JavadocElementExtractor extends CtScanner {
     return new QualifiedName(
         ownerName + "#" + signature,
         getModuleName(ref.getDeclaringType().getTypeDeclaration()
-    ));
+        ));
   }
 }
