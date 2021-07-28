@@ -87,8 +87,12 @@ public class JavadocMethod implements JavadocElement {
           .collect(Collectors.joining(", ", "<", "> "));
     }
 
-    result += getReturnType().getDeclaration(style) + " ";
-    result += getQualifiedName().getSimpleName();
+    if (!name.getSimpleName().equals("<init>")) {
+      result += getReturnType().getDeclaration(style) + " ";
+      result += getQualifiedName().getSimpleName();
+    } else {
+      result += getReturnType().getType().getSimpleName();
+    }
 
     result += "(";
     result += getParameters().stream()
