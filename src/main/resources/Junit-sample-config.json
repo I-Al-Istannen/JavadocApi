@@ -1,6 +1,6 @@
 {
   "outputPath": "target/Junit-Index.db",
-  "resourcePaths": ["/tmp/Junit.zip"],
+  "resourcePaths": ["/home/i_al_istannen/.temp/Indizes/Junit.zip"],
   "allowedPackages": [
     "*"
   ]

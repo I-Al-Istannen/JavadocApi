@@ -1,6 +1,6 @@
 {
   "outputPath": "target/Paper-Api-Index.db",
-  "resourcePaths": ["/tmp/Paper/Paper-API/src/main/java"],
+  "resourcePaths": ["/home/i_al_istannen/.temp/Indizes/Paper.zip"],
   "allowedPackages": [
     "*"
   ]

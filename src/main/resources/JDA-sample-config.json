@@ -1,6 +1,6 @@
 {
   "outputPath": "target/JDA-Index.db",
-  "resourcePaths": ["/tmp/JDA/src/main/java"],
+  "resourcePaths": ["/home/i_al_istannen/.temp/Indizes/JDA.zip"],
   "allowedPackages": [
     "*"
   ]

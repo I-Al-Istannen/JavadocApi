@@ -1,6 +1,6 @@
 {
   "outputPath": "target/JavaFx-Index.db",
-  "resourcePaths": ["/tmp/jfx/modules"],
+  "resourcePaths": ["/home/i_al_istannen/.temp/Indizes/jfx/modules"],
   "allowedPackages": [
     "javafx.animation",
     "javafx.application",
