@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import spoon.reflect.code.BinaryOperatorKind;
 import spoon.reflect.code.CtBinaryOperator;
@@ -421,6 +422,7 @@ public class JavadocElementExtractor extends CtScanner {
         case "long":
         case "float":
         case "double":
+        case "void":
           return null;
       }
     }
@@ -447,13 +449,16 @@ public class JavadocElementExtractor extends CtScanner {
     String signature = ref.getSignature();
     // convert <fqn>() (i.e. a constructor) to just SimpleName()
     if (signature.startsWith(owner.getQualifiedName())) {
-      signature = signature.replaceFirst(owner.getQualifiedName(), owner.getSimpleName());
+      signature = signature.replaceFirst(
+          Pattern.quote(owner.getQualifiedName()),
+          owner.getSimpleName()
+      );
     }
 
     String ownerName = ref.getDeclaringType().getQualifiedName();
     return new QualifiedName(
         ownerName + "#" + signature,
-        getModuleName(ref.getDeclaringType().getTypeDeclaration()
-        ));
+        getModuleName(ref.getDeclaringType().getTypeDeclaration())
+    );
   }
 }
