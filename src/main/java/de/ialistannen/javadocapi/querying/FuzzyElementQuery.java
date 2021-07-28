@@ -130,9 +130,9 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
 
   private static class Query {
 
-    private static final Pattern FIELD_PATTERN = Pattern.compile("^([\\w.$]+)#([\\w$]+)$");
+    private static final Pattern FIELD_PATTERN = Pattern.compile("^([\\w.$]+)#([\\w$]+|<INIT>)$");
     private static final Pattern METHOD_PATTERN = Pattern.compile(
-        "^([\\w.$]+)#([\\w$]+)\\((.*)\\)?$"
+        "^([\\w.$]+)#([\\w$]+|<INIT>)\\((.*)\\)?$"
     );
     private static final Pattern PARAMETER_PATTERN = Pattern.compile("([\\w.$]+)( [\\w$]+)?(, *)?");
 
@@ -179,7 +179,14 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
       }
       Matcher matcher = FIELD_PATTERN.matcher(query);
       if (matcher.matches()) {
-        return new Query(matcher.group(1).strip(), matcher.group(2).strip(), null);
+        String className = matcher.group(1).strip();
+        String fieldName = matcher.group(2).strip();
+
+        if (fieldName.toLowerCase(Locale.ROOT).equals(className.toLowerCase(Locale.ROOT))) {
+          fieldName = "<init>".toUpperCase(Locale.ROOT);
+        }
+
+        return new Query(className, fieldName, null);
       }
 
       matcher = METHOD_PATTERN.matcher(query);
@@ -189,6 +196,10 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
       String className = matcher.group(1).strip();
       String methodName = matcher.group(2).strip();
       String parameterString = matcher.group(3).strip();
+
+      if (methodName.toLowerCase(Locale.ROOT).equals(className.toLowerCase(Locale.ROOT))) {
+        methodName = "<init>".toUpperCase(Locale.ROOT);
+      }
 
       return new Query(className, methodName, extractParameters(parameterString));
     }
