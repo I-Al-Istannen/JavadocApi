@@ -161,14 +161,6 @@ public class JavadocElementExtractor extends CtScanner {
       return;
     }
 
-    if (m.getSimpleName().equals(m.getDeclaringType().getSimpleName())) {
-      System.out.println(
-          "Ignored method " + m.getSignature() + " in " + m.getDeclaringType().getQualifiedName()
-              + " as it was named the same as the class it's in!"
-      );
-      return;
-    }
-
     handleExecutable(m, m, m);
     reportProgress();
     super.visitCtMethod(m);
@@ -457,10 +449,7 @@ public class JavadocElementExtractor extends CtScanner {
     String signature = ref.getSignature();
     // convert <fqn>() (i.e. a constructor) to just SimpleName()
     if (signature.startsWith(owner.getQualifiedName())) {
-      signature = signature.replaceFirst(
-          Pattern.quote(owner.getQualifiedName()),
-          owner.getSimpleName()
-      );
+      signature = "<init>" + signature.substring(owner.getQualifiedName().length());
     }
 
     String ownerName = ref.getDeclaringType().getQualifiedName();
