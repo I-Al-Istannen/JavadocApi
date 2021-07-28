@@ -161,6 +161,14 @@ public class JavadocElementExtractor extends CtScanner {
       return;
     }
 
+    if (m.getSimpleName().equals(m.getDeclaringType().getSimpleName())) {
+      System.out.println(
+          "Ignored method " + m.getSignature() + " in " + m.getDeclaringType().getQualifiedName()
+              + " as it was named the same as the class it's in!"
+      );
+      return;
+    }
+
     handleExecutable(m, m, m);
     reportProgress();
     super.visitCtMethod(m);
