@@ -18,14 +18,14 @@ import de.ialistannen.javadocapi.model.types.PossiblyGenericType;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import spoon.reflect.code.BinaryOperatorKind;
 import spoon.reflect.code.CtBinaryOperator;
@@ -46,37 +46,29 @@ import spoon.reflect.declaration.CtInterface;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtModifiable;
 import spoon.reflect.declaration.CtModule;
-import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtVariableReference;
-import spoon.reflect.visitor.CtScanner;
+import spoon.reflect.visitor.CtAbstractVisitor;
 
-public class JavadocElementExtractor extends CtScanner {
+public class JavadocElementExtractor extends CtAbstractVisitor {
 
   private final JavadocParser parser;
-  private final List<JavadocElement> foundElements;
-  private final Set<String> packageWhitelist;
+  private final Collection<JavadocElement> foundElements;
 
-  public JavadocElementExtractor(Set<String> packageWhitelist) {
-    this.packageWhitelist = packageWhitelist;
-    this.foundElements = new ArrayList<>();
+  public JavadocElementExtractor() {
+    this.foundElements = new ConcurrentLinkedQueue<>();
     this.parser = new JavadocParser();
   }
 
   public List<JavadocElement> getFoundElements() {
-    return foundElements;
+    return new ArrayList<>(foundElements);
   }
 
   @Override
   public <T> void visitCtInterface(CtInterface<T> ctInterface) {
-    // Skip internal classes
-    if (!ctInterface.isPublic()) {
-      return;
-    }
-
     foundElements.add(forCtType(ctInterface, Type.INTERFACE));
     reportProgress();
     super.visitCtInterface(ctInterface);
@@ -90,11 +82,6 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public <A extends Annotation> void visitCtAnnotationType(CtAnnotationType<A> annotationType) {
-    // Skip internal classes
-    if (!annotationType.isPublic()) {
-      return;
-    }
-
     foundElements.add(forCtType(annotationType, Type.ANNOTATION));
     reportProgress();
     super.visitCtAnnotationType(annotationType);
@@ -102,43 +89,13 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public <T extends Enum<?>> void visitCtEnum(CtEnum<T> ctEnum) {
-    // Skip internal classes
-    if (!ctEnum.isPublic()) {
-      return;
-    }
-
     foundElements.add(forCtType(ctEnum, Type.ENUM));
     reportProgress();
     super.visitCtEnum(ctEnum);
   }
 
   @Override
-  public void visitCtPackage(CtPackage ctPackage) {
-    if (packageWhitelist.contains("*")) {
-      super.visitCtPackage(ctPackage);
-      return;
-    }
-
-    if (packageWhitelist.contains(ctPackage.getQualifiedName())) {
-      super.visitCtPackage(ctPackage);
-      return;
-    }
-
-    for (String allowedPackage : packageWhitelist) {
-      if (allowedPackage.startsWith(ctPackage.getQualifiedName())) {
-        super.visitCtPackage(ctPackage);
-        return;
-      }
-    }
-  }
-
-  @Override
   public <T> void visitCtClass(CtClass<T> ctClass) {
-    // Skip internal classes
-    if (!ctClass.isPublic()) {
-      return;
-    }
-
     foundElements.add(forCtType(ctClass, Type.CLASS));
     reportProgress();
     super.visitCtClass(ctClass);
@@ -146,10 +103,6 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public <T> void visitCtConstructor(CtConstructor<T> c) {
-    if (!c.isPublic() && !c.isProtected()) {
-      return;
-    }
-
     handleExecutable(c, c, c);
     reportProgress();
     super.visitCtConstructor(c);
@@ -157,13 +110,24 @@ public class JavadocElementExtractor extends CtScanner {
 
   @Override
   public <T> void visitCtMethod(CtMethod<T> m) {
-    if (!m.isPublic() && !m.isProtected()) {
-      return;
-    }
-
     handleExecutable(m, m, m);
     reportProgress();
     super.visitCtMethod(m);
+  }
+
+  @Override
+  public <T> void visitCtField(CtField<T> f) {
+    foundElements.add(new JavadocField(
+        new QualifiedName(
+            f.getDeclaringType().getQualifiedName() + "#" + f.getSimpleName(),
+            getModuleName(f.getDeclaringType())
+        ),
+        getModifiers(f),
+        getPossiblyGenericType(f.getType()),
+        getComment(f)
+    ));
+    reportProgress();
+    super.visitCtField(f);
   }
 
   private void handleExecutable(
@@ -193,25 +157,6 @@ public class JavadocElementExtractor extends CtScanner {
         getTypeParameters(formalTypeDeclarer),
         getComment(executable)
     ));
-  }
-
-  @Override
-  public <T> void visitCtField(CtField<T> f) {
-    if (!f.isPublic() && !f.isProtected()) {
-      return;
-    }
-
-    foundElements.add(new JavadocField(
-        new QualifiedName(
-            f.getDeclaringType().getQualifiedName() + "#" + f.getSimpleName(),
-            getModuleName(f.getDeclaringType())
-        ),
-        getModifiers(f),
-        getPossiblyGenericType(f.getType()),
-        getComment(f)
-    ));
-    reportProgress();
-    super.visitCtField(f);
   }
 
   private List<String> getModifiers(CtModifiable m) {

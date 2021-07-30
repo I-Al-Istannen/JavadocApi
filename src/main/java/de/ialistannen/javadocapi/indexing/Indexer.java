@@ -1,6 +1,8 @@
 package de.ialistannen.javadocapi.indexing;
 
 import de.ialistannen.javadocapi.spoon.JavadocElementExtractor;
+import de.ialistannen.javadocapi.spoon.filtering.IndexerFilterChain;
+import de.ialistannen.javadocapi.spoon.filtering.ParallelProcessor;
 import de.ialistannen.javadocapi.storage.ConfiguredGson;
 import de.ialistannen.javadocapi.storage.SqliteStorage;
 import java.io.File;
@@ -46,8 +48,17 @@ public class Indexer {
     System.out.println("Model successfully built\n");
 
     System.out.println(heading("Converting Spoon Model "));
-    JavadocElementExtractor extractor = new JavadocElementExtractor(config.getAllowedPackages());
-    model.getAllModules().forEach(extractor::visitCtModule);
+    JavadocElementExtractor extractor = new JavadocElementExtractor();
+    ParallelProcessor processor = new ParallelProcessor(
+        new IndexerFilterChain(config.getAllowedPackages()).asFilter(),
+        Runtime.getRuntime().availableProcessors()
+    );
+    model.getAllModules()
+        .forEach(it -> processor.process(
+            it,
+            element -> element.accept(extractor))
+        );
+    processor.shutdown();
     System.out.println("Model successfully converted\n");
 
     System.out.println(heading("Writing to output database"));
