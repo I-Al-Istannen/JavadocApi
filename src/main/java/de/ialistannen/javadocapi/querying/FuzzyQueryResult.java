@@ -9,11 +9,14 @@ public class FuzzyQueryResult implements QueryResult {
   private final boolean exact;
   private final QualifiedName qualifiedName;
   private final ElementLoader loader;
+  private final ElementType type;
 
-  public FuzzyQueryResult(boolean exact, QualifiedName qualifiedName, ElementLoader loader) {
+  public FuzzyQueryResult(boolean exact, QualifiedName qualifiedName, ElementLoader loader,
+      ElementType type) {
     this.exact = exact;
     this.qualifiedName = qualifiedName;
     this.loader = loader;
+    this.type = type;
   }
 
   public boolean isExact() {
@@ -23,6 +26,11 @@ public class FuzzyQueryResult implements QueryResult {
   @Override
   public QualifiedName getQualifiedName() {
     return qualifiedName;
+  }
+
+  @Override
+  public ElementType getType() {
+    return type;
   }
 
   @Override
@@ -48,11 +56,11 @@ public class FuzzyQueryResult implements QueryResult {
     }
     FuzzyQueryResult that = (FuzzyQueryResult) o;
     return exact == that.exact && Objects.equals(qualifiedName, that.qualifiedName)
-        && Objects.equals(loader, that.loader);
+        && Objects.equals(loader, that.loader) && type == that.type;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(exact, qualifiedName, loader);
+    return Objects.hash(exact, qualifiedName, loader, type);
   }
 }

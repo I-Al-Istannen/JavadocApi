@@ -15,6 +15,12 @@ import java.util.stream.Collectors;
 
 public class NameShortener {
 
+  /**
+   * Shortens the qualified names as much as possible while still ensuring they are unique.
+   *
+   * @param names the names to shorten
+   * @return a map from original to shortened name
+   */
   public Map<String, String> shortenMatches(Set<QualifiedName> names) {
     Map<String, String> typeFixpoints = findFixpoint(
         names.stream()

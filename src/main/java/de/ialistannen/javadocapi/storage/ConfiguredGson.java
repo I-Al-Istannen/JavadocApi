@@ -147,27 +147,4 @@ public class ConfiguredGson {
           .orElseThrow(() -> new IllegalArgumentException("Unknown fragment type " + element));
     }
   }
-
-  private enum AnnotationValueType {
-    PRIMITIVE(PrimitiveAnnotationValue.class),
-    QUALIFIED(QualifiedAnnotationValue.class),
-    LIST(ListAnnotationValue.class);
-
-    private final Class<? extends AnnotationValue> valueClass;
-
-    AnnotationValueType(Class<? extends AnnotationValue> elementClass) {
-      this.valueClass = elementClass;
-    }
-
-    public Class<? extends AnnotationValue> getValueClass() {
-      return valueClass;
-    }
-
-    public static AnnotationValueType fromValue(AnnotationValue element) {
-      return Arrays.stream(values())
-          .filter(it -> it.valueClass.isInstance(element))
-          .findFirst()
-          .orElseThrow(() -> new IllegalArgumentException("Unknown annotation type " + element));
-    }
-  }
 }

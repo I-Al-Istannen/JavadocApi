@@ -3,6 +3,7 @@ package de.ialistannen.javadocapi.querying;
 import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.types.JavadocType;
+import de.ialistannen.javadocapi.querying.QueryResult.ElementType;
 import de.ialistannen.javadocapi.storage.ElementLoader;
 import de.ialistannen.javadocapi.storage.ElementLoader.LoadResult;
 import java.util.ArrayList;
@@ -41,13 +42,17 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
 
     if (query.getParameters() == null) {
       return potentialElements.stream()
-          .map(it -> toResult(query, it))
+          .map(it -> toResult(
+              query,
+              it,
+              it.getResult().isMethod() ? ElementType.METHOD : ElementType.FIELD)
+          )
           .collect(Collectors.toList());
     }
 
     return potentialElements.stream()
         .filter(it -> fuzzyMatchParameters(query.getParameters(), it.getResult()))
-        .map(it -> toResult(query, it))
+        .map(it -> toResult(query, it, ElementType.METHOD))
         .collect(Collectors.toList());
   }
 
@@ -59,8 +64,11 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
     if (query.getElementName() == null) {
       return potentialClasses
           .stream()
-          .map(it -> it.map(JavadocType::getQualifiedName))
-          .map(name -> toResult(query, name))
+          .map(it -> toResult(
+              query,
+              it.map(JavadocType::getQualifiedName),
+              ElementType.fromType(it.getResult().getType()).orElseThrow()
+          ))
           .collect(Collectors.toList());
     }
 
@@ -97,7 +105,11 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
 
     return results
         .stream()
-        .map(name -> toResult(query, name))
+        .map(name -> toResult(
+            query,
+            name,
+            name.getResult().isMethod() ? ElementType.METHOD : ElementType.FIELD
+        ))
         .collect(Collectors.toList());
   }
 
@@ -121,11 +133,12 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
     return true;
   }
 
-  private FuzzyQueryResult toResult(Query query, LoadResult<QualifiedName> element) {
+  private FuzzyQueryResult toResult(Query query, LoadResult<QualifiedName> element,
+      ElementType type) {
     Query elementQuery = Query.fromString(element.getResult().asString().toUpperCase(Locale.ROOT));
     boolean exact = query.exactToReference(elementQuery);
 
-    return new FuzzyQueryResult(exact, element.getResult(), element.getLoader());
+    return new FuzzyQueryResult(exact, element.getResult(), element.getLoader(), type);
   }
 
   private static class Query {
