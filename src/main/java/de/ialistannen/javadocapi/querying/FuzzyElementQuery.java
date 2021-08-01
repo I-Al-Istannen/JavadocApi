@@ -147,7 +147,9 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
     private static final Pattern METHOD_PATTERN = Pattern.compile(
         "^([\\w.$]+)#([\\w$]+|<INIT>)\\((.*)\\)?$"
     );
-    private static final Pattern PARAMETER_PATTERN = Pattern.compile("([\\w.$]+)( [\\w$]+)?(, *)?");
+    private static final Pattern PARAMETER_PATTERN = Pattern.compile(
+        "([\\w.$\\[\\]]+)( [\\w$]+)?(, *)?"
+    );
 
     private final String className;
     private final String elementName;
