@@ -95,6 +95,12 @@
       <version>1.2.3</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-invoker</artifactId>
+      <version>3.1.0</version>
+    </dependency>
+
     <!-- https://mvnrepository.com/artifact/io.github.furstenheim/copy_down -->
     <dependency>
       <groupId>io.github.furstenheim</groupId>

@@ -3,5 +3,7 @@
   "resourcePaths": ["/home/i_al_istannen/.temp/Indizes/Paper.zip"],
   "allowedPackages": [
     "*"
-  ]
+  ],
+  "buildFile": "/home/i_al_istannen/.temp/Indizes/Paper/Paper-MojangAPI/build.gradle.kts",
+  "mavenHome": "/opt/maven"
 }

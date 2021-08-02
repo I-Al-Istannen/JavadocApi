@@ -39,5 +39,7 @@
     "javafx.stage",
     "javafx.util",
     "javafx.util.converter"
-  ]
+  ],
+  "buildFile": "/home/i_al_istannen/.temp/Indizes/jfx/build.gradle",
+  "mavenHome": "/opt/maven"
 }
