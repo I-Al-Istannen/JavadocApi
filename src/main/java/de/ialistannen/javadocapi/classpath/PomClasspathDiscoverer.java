@@ -40,11 +40,14 @@ public class PomClasspathDiscoverer {
     invoker.setMavenHome(mavenHome.toFile());
     InvocationResult result = invoker.execute(invocationRequest);
 
+    String output = outputStream.toString(StandardCharsets.UTF_8);
     if (result.getExitCode() != 0) {
-      throw new MavenInvocationException("Non-zero exit code", result.getExecutionException());
+      throw new MavenInvocationException(
+          "Non-zero exit code\n" + output,
+          result.getExecutionException()
+      );
     }
 
-    String output = outputStream.toString(StandardCharsets.UTF_8);
     Matcher matcher = Pattern.compile("Dependencies classpath:\n(.+)").matcher(output);
 
     if (output.contains("No dependencies found.")) {

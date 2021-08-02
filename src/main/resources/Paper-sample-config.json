@@ -4,6 +4,11 @@
   "allowedPackages": [
     "*"
   ],
-  "buildFile": "/home/i_al_istannen/.temp/Indizes/Paper/Paper-MojangAPI/build.gradle.kts",
+  "buildFiles": [
+    "/home/i_al_istannen/.temp/Indizes/Paper/test-plugin/build.gradle.kts",
+    "/home/i_al_istannen/.temp/Indizes/Paper/Paper-MojangAPI/build.gradle.kts",
+    "/home/i_al_istannen/.temp/Indizes/Paper/Paper-API/build.gradle.kts",
+    "/home/i_al_istannen/.temp/Indizes/Paper/build.gradle.kts"
+  ],
   "mavenHome": "/opt/maven"
 }

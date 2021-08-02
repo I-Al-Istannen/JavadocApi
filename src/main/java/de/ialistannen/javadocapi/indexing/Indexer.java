@@ -1,7 +1,9 @@
 package de.ialistannen.javadocapi.indexing;
 
-import de.ialistannen.javadocapi.classpath.GradleToPomRewriter;
+import de.ialistannen.javadocapi.classpath.GradleParser;
+import de.ialistannen.javadocapi.classpath.Pom;
 import de.ialistannen.javadocapi.classpath.PomClasspathDiscoverer;
+import de.ialistannen.javadocapi.classpath.PomParser;
 import de.ialistannen.javadocapi.spoon.JavadocElementExtractor;
 import de.ialistannen.javadocapi.spoon.filtering.IndexerFilterChain;
 import de.ialistannen.javadocapi.spoon.filtering.ParallelProcessor;
@@ -15,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import spoon.Launcher;
 import spoon.OutputType;
@@ -49,8 +52,8 @@ public class Indexer {
       }
     }
 
-    if (config.getBuildFile().isPresent() && config.getMavenHome().isPresent()) {
-      configureInputClassLoader(config.getBuildFile().get(), config.getMavenHome().get(), launcher);
+    if (!config.getBuildFiles().isEmpty() && config.getMavenHome().isPresent()) {
+      configureInputClassLoader(config.getBuildFiles(), config.getMavenHome().get(), launcher);
     }
 
     System.out.println("Spoon successfully configured\n");
@@ -78,26 +81,36 @@ public class Indexer {
         .addAll(extractor.getFoundElements());
   }
 
-  private static void configureInputClassLoader(Path buildFile, Path mavenHome, Launcher launcher)
+  private static void configureInputClassLoader(List<Path> buildFiles, Path mavenHome,
+      Launcher launcher)
       throws IOException {
     try {
-      if (buildFile.getFileName().toString().contains("gradle")) {
-        System.out.println(heading("Converting gradle file to POM", 2));
-
-        Path tempFile = Files.createTempFile("Generatedpom", ".xml");
-        tempFile.toFile().deleteOnExit();
-        Files.writeString(tempFile, new GradleToPomRewriter().rewrite(buildFile));
-        buildFile = tempFile;
-
-        System.out.println("  Successfully converted gradle file to POM");
+      Pom pom = new Pom(Set.of(), Set.of(), Set.of());
+      GradleParser gradleParser = new GradleParser();
+      PomParser pomParser = new PomParser();
+      for (Path buildFile : buildFiles) {
+        if (buildFile.getFileName().toString().contains("gradle")) {
+          System.out.println(heading("Parsing build.gradle", 2));
+          pom = pom.merge(gradleParser.parseGradleFile(Files.readString(buildFile)));
+          System.out.println("  Successfully parsed build.gradle file");
+        } else {
+          System.out.println(heading("Parsing POM", 2));
+          pom = pom.merge(pomParser.parsePom(Files.readString(buildFile)));
+          System.out.println("  Successfully parsed POM");
+        }
       }
 
       System.out.println(heading("Building classpath from POM", 2));
 
-      List<Path> classpath = new PomClasspathDiscoverer().findClasspath(buildFile, mavenHome);
+      Path outputPomFile = Files.createTempFile("Generatedpom", ".xml");
+      outputPomFile.toFile().deleteOnExit();
+      Files.writeString(outputPomFile, pom.format());
+
+      List<Path> classpath = new PomClasspathDiscoverer().findClasspath(outputPomFile, mavenHome);
 
       List<URL> urls = new ArrayList<>();
       for (Path path : classpath) {
+        System.out.println("    " + path);
         urls.add(path.toUri().toURL());
       }
       launcher.getEnvironment().setInputClassLoader(new URLClassLoader(urls.toArray(URL[]::new)));

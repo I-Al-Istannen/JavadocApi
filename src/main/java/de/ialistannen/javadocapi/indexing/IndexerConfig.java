@@ -1,9 +1,11 @@
 package de.ialistannen.javadocapi.indexing;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class IndexerConfig {
 
@@ -11,19 +13,15 @@ public class IndexerConfig {
   private final List<String> resourcePaths;
   private final String outputPath;
   private final String mavenHome;
-  private final String buildFile;
+  private final List<String> buildFiles;
 
   public IndexerConfig(Set<String> allowedPackages, List<String> resourcePaths, String outputPath,
-      String mavenHome, String buildFile) {
+      String mavenHome, List<String> buildFiles) {
     this.allowedPackages = allowedPackages;
     this.resourcePaths = resourcePaths;
     this.outputPath = outputPath;
     this.mavenHome = mavenHome;
-    this.buildFile = buildFile;
-
-    if (buildFile != null && mavenHome == null) {
-      throw new IllegalArgumentException("pomFile requires mavenHome");
-    }
+    this.buildFiles = buildFiles;
   }
 
   public Set<String> getAllowedPackages() {
@@ -42,7 +40,10 @@ public class IndexerConfig {
     return Optional.ofNullable(mavenHome).map(Path::of);
   }
 
-  public Optional<Path> getBuildFile() {
-    return Optional.ofNullable(buildFile).map(Path::of);
+  public List<Path> getBuildFiles() {
+    if (buildFiles == null) {
+      return Collections.emptyList();
+    }
+    return buildFiles.stream().map(Path::of).collect(Collectors.toList());
   }
 }

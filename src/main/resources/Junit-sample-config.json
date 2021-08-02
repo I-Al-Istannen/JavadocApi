@@ -4,6 +4,6 @@
   "allowedPackages": [
     "*"
   ],
-  "buildFile": "/home/i_al_istannen/.temp/Indizes/junit/pom.xml",
+  "buildFiles": ["/home/i_al_istannen/.temp/Indizes/junit/pom.xml"],
   "mavenHome": "/opt/maven"
 }
