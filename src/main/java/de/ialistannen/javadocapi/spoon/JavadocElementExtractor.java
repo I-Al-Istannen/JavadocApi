@@ -39,6 +39,7 @@ import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
 import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtEnum;
+import spoon.reflect.declaration.CtEnumValue;
 import spoon.reflect.declaration.CtExecutable;
 import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtFormalTypeDeclarer;
@@ -85,6 +86,21 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
     foundElements.add(forCtType(annotationType, Type.ANNOTATION));
     reportProgress();
     super.visitCtAnnotationType(annotationType);
+  }
+
+  @Override
+  public <T> void visitCtEnumValue(CtEnumValue<T> enumValue) {
+    foundElements.add(new JavadocField(
+        new QualifiedName(
+            enumValue.getDeclaringType().getQualifiedName() + "#" + enumValue.getSimpleName(),
+            getModuleName(enumValue)
+        ),
+        getModifiers(enumValue),
+        getPossiblyGenericType(enumValue.getType()),
+        getComment(enumValue)
+    ));
+    reportProgress();
+    super.visitCtEnumValue(enumValue);
   }
 
   @Override
