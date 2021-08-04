@@ -45,7 +45,12 @@ public class ParallelProcessor {
             if (!filter.keep(item)) {
               continue;
             }
-            consumer.accept(item);
+            try {
+              consumer.accept(item);
+            } catch (Exception e) {
+              System.err.println("Error in parallel worker");
+              e.printStackTrace();
+            }
             workQueue.addAll(item.getDirectChildren());
           }
 

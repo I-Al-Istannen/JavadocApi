@@ -255,6 +255,16 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
         .map(ref -> executableRefToQualifiedName(ctType, ref))
         .collect(Collectors.toCollection(ArrayList::new));
 
+    if (ctType instanceof CtEnum) {
+      ((CtEnum<?>) ctType).getEnumValues()
+          .stream()
+          .map(it -> new QualifiedName(
+              it.getDeclaringType().getQualifiedName() + "#" + it.getSimpleName(),
+              getModuleName(it.getDeclaringType())
+          ))
+          .forEach(memberNames::add);
+    }
+
     ctType.getAllFields()
         .stream()
         .filter(it -> it.getFieldDeclaration().isProtected() || it.getFieldDeclaration().isPublic())
