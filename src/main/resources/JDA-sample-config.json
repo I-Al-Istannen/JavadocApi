@@ -4,6 +4,6 @@
   "allowedPackages": [
     "*"
   ],
-  "buildFile": ["/home/i_al_istannen/.temp/Indizes/JDA/build.gradle.kts"],
+  "buildFiles": ["/home/i_al_istannen/.temp/Indizes/JDA/build.gradle.kts"],
   "mavenHome": "/opt/maven"
 }
