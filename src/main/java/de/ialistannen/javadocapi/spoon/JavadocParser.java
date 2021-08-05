@@ -27,6 +27,7 @@ import spoon.reflect.code.CtJavaDocTag.TagType;
 import spoon.reflect.declaration.CtCompilationUnit;
 import spoon.reflect.declaration.CtImportKind;
 import spoon.reflect.declaration.CtType;
+import spoon.reflect.reference.CtFieldReference;
 import spoon.reflect.reference.CtTypeReference;
 
 public class JavadocParser {
@@ -155,18 +156,28 @@ public class JavadocParser {
       QualifiedName qualifiedName = qualifyTypeName(reference, className);
       if (elementName != null) {
         String memberAppendix = "#" + elementName;
+        List<QualifiedName> elementParameterTypes = null;
+
         if (parameters != null) {
+          elementParameterTypes = List.of();
+
           memberAppendix += "(";
           if (!parameters.isBlank()) {
-            memberAppendix += Arrays.stream(parameters.split(","))
+            elementParameterTypes = Arrays.stream(parameters.split(","))
                 .map(it -> it.strip().split(" ")[0])
                 .map(it -> qualifyTypeName(reference, it))
+                .collect(Collectors.toList());
+
+            memberAppendix += elementParameterTypes
+                .stream()
                 .map(QualifiedName::asString)
                 .collect(Collectors.joining(","));
           }
           memberAppendix += ")";
         }
 
+        // Re-Resolve it as methods/fields might be declared in parent types
+        qualifiedName = qualifyTypeName(reference, className, elementName, elementParameterTypes);
         qualifiedName = new QualifiedName(
             qualifiedName.asString() + memberAppendix,
             qualifiedName.getModuleName().orElse(null)
@@ -186,6 +197,54 @@ public class JavadocParser {
     );
   }
 
+  private QualifiedName qualifyTypeName(CtJavaDoc reference, String className, String elementName,
+      List<QualifiedName> parameters) {
+    Optional<CtType<?>> enclosingType = qualifyType(reference, className);
+
+    QualifiedName fallbackName = qualifyTypeName(reference, className);
+
+    if (enclosingType.isEmpty()) {
+      return fallbackName;
+    }
+    CtType<?> type = enclosingType.get();
+
+    if (parameters == null) {
+      return type.getAllFields()
+          .stream()
+          .filter(it -> it.getSimpleName().equals(elementName))
+          .findFirst()
+          .map(CtFieldReference::getDeclaringType)
+          .map(it -> new QualifiedName(
+              it.getQualifiedName(),
+              getModuleName(it.getTypeDeclaration())
+          ))
+          .orElse(fallbackName);
+    }
+
+    return type.getAllExecutables()
+        .stream()
+        .filter(it -> it.getSimpleName().equals(elementName))
+        .filter(it -> it.getParameters().size() == parameters.size())
+        .filter(it -> parameterTypesMatch(it.getParameters(), parameters))
+        .findFirst()
+        .map(it -> new QualifiedName(
+            it.getDeclaringType().getQualifiedName(),
+            getModuleName(it.getDeclaringType().getTypeDeclaration())
+        ))
+        .orElse(fallbackName);
+  }
+
+  private boolean parameterTypesMatch(List<CtTypeReference<?>> actualParams,
+      List<QualifiedName> parameters) {
+    for (int i = 0; i < parameters.size(); i++) {
+      String actualName = actualParams.get(i).getQualifiedName();
+      if (!actualName.equals(parameters.get(i).asString())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   private QualifiedName qualifyTypeName(CtJavaDoc element, String name) {
     QualifiedName qualifiedName = qualifyTypeNameNoArray(element, name.replace("[]", ""));
     if (!name.contains("[]")) {
@@ -198,6 +257,12 @@ public class JavadocParser {
   }
 
   private QualifiedName qualifyTypeNameNoArray(CtJavaDoc element, String name) {
+    return qualifyType(element, name)
+        .map(it -> new QualifiedName(it.getQualifiedName(), getModuleName(it)))
+        .orElse(new QualifiedName(name, getModuleName(element)));
+  }
+
+  private Optional<CtType<?>> qualifyType(CtJavaDoc element, String name) {
     CtType<?> parentType = element.getParent(CtType.class);
     if (parentType != null && !name.isBlank()) {
       Optional<CtTypeReference<?>> type = parentType.getReferencedTypes()
@@ -205,25 +270,16 @@ public class JavadocParser {
           .filter(it -> it.getSimpleName().equals(name) || it.getQualifiedName().equals(name))
           .findAny();
       if (type.isPresent()) {
-        return new QualifiedName(
-            type.get().getQualifiedName(),
-            getModuleName(type.get().getTypeDeclaration())
-        );
+        return Optional.ofNullable(type.get().getTypeDeclaration());
       }
 
       CtType<?> siblingType = parentType.getPackage().getType(name);
       if (siblingType != null) {
-        return new QualifiedName(
-            siblingType.getQualifiedName(),
-            getModuleName(siblingType)
-        );
+        return Optional.of(siblingType);
       }
     }
     if (parentType != null && name.isBlank()) {
-      return new QualifiedName(
-          parentType.getQualifiedName(),
-          getModuleName(parentType)
-      );
+      return Optional.of(parentType);
     }
 
     CtCompilationUnit parentUnit = element.getPosition().getCompilationUnit();
@@ -237,11 +293,7 @@ public class JavadocParser {
                 .stream()
                 .filter(it -> it.getSimpleName().equals(name))
                 .findFirst()
-                .map(ctTypeReference -> new QualifiedName(
-                    ctTypeReference.getQualifiedName(),
-                    getModuleName(ctTypeReference.getDeclaration())
-                ))
-        )
-        .orElse(new QualifiedName(name, getModuleName(element)));
+                .map(CtTypeReference::getTypeDeclaration)
+        );
   }
 }
