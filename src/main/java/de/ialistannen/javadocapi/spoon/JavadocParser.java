@@ -2,6 +2,7 @@ package de.ialistannen.javadocapi.spoon;
 
 import static de.ialistannen.javadocapi.spoon.JavadocElementExtractor.getModuleName;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.comment.JavadocComment;
 import de.ialistannen.javadocapi.model.comment.JavadocCommentFragment;
@@ -12,6 +13,7 @@ import de.ialistannen.javadocapi.model.comment.JavadocCommentTag;
 import de.ialistannen.javadocapi.model.comment.JavadocCommentText;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -27,6 +29,7 @@ import spoon.reflect.code.CtJavaDocTag.TagType;
 import spoon.reflect.declaration.CtCompilationUnit;
 import spoon.reflect.declaration.CtImportKind;
 import spoon.reflect.declaration.CtType;
+import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtFieldReference;
 import spoon.reflect.reference.CtTypeReference;
 
@@ -35,6 +38,12 @@ public class JavadocParser {
   private static final Pattern LINK_PATTERN = Pattern.compile(
       "^([\\w$.]*)(#([\\w.$]*)(\\((.*?)\\))?)?( .+)?$"
   );
+
+  private final Cache<String, Collection<CtExecutableReference<?>>> cache;
+
+  public JavadocParser(Cache<String, Collection<CtExecutableReference<?>>> executableCache) {
+    this.cache = executableCache;
+  }
 
   public JavadocComment fromCtJavadoc(CtJavaDoc javadoc) {
     List<List<JavadocCommentFragment>> paragraphs = chopInParagraphs(javadoc.getContent())
@@ -221,7 +230,10 @@ public class JavadocParser {
           .orElse(fallbackName);
     }
 
-    return type.getAllExecutables()
+    return cache.get(
+        type.getQualifiedName(),
+        ignored -> type.getAllExecutables()
+    )
         .stream()
         .filter(it -> it.getSimpleName().equals(elementName))
         .filter(it -> it.getParameters().size() == parameters.size())

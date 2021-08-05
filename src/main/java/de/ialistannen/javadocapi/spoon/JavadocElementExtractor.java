@@ -1,5 +1,7 @@
 package de.ialistannen.javadocapi.spoon;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import de.ialistannen.javadocapi.model.JavadocElement;
 import de.ialistannen.javadocapi.model.QualifiedName;
 import de.ialistannen.javadocapi.model.comment.JavadocComment;
@@ -58,10 +60,14 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
 
   private final JavadocParser parser;
   private final Collection<JavadocElement> foundElements;
+  private final Cache<String, Collection<CtExecutableReference<?>>> executableCache;
 
   public JavadocElementExtractor() {
+    this.executableCache = Caffeine.newBuilder()
+        .maximumSize(5000)
+        .build();
     this.foundElements = new ConcurrentLinkedQueue<>();
-    this.parser = new JavadocParser();
+    this.parser = new JavadocParser(executableCache);
   }
 
   public List<JavadocElement> getFoundElements() {
@@ -249,7 +255,11 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
   }
 
   private <T> JavadocType forCtType(CtType<T> ctType, JavadocType.Type type) {
-    List<QualifiedName> memberNames = ctType.getAllExecutables()
+    List<QualifiedName> memberNames = executableCache
+        .get(
+            ctType.getQualifiedName(),
+            ignored -> ctType.getAllExecutables()
+        )
         .stream()
         .filter(ref -> executableReferenceIsVisible(ctType, ref))
         .map(ref -> executableRefToQualifiedName(ctType, ref))
