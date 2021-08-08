@@ -22,12 +22,11 @@ public class ExternalJavadocAwareLinkResolveStrategy implements LinkResolveStrat
 
     if (nameAsString.contains("#")) {
       packageName = name.getLexicalParent()
-          .orElseThrow()
-          .getLexicalParent()
-          .orElseThrow()
-          .asString();
+          .flatMap(QualifiedName::getLexicalParent)
+          .map(QualifiedName::asString)
+          .orElse("nope");
     } else {
-      packageName = name.getLexicalParent().orElseThrow().asString();
+      packageName = name.getLexicalParent().map(QualifiedName::asString).orElse("nope");
     }
 
     for (ExternalJavadocReference reference : externalJavadocReferences) {

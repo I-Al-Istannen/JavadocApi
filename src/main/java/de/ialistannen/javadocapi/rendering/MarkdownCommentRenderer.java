@@ -31,6 +31,14 @@ public class MarkdownCommentRenderer implements CommentRenderer {
     // Clean up pre elements without code as a direct child - the markdown renderer will ignore them
     // and it might be a bit nicer to always have a "code" element.
     Document document = Jsoup.parseBodyFragment(html);
+
+    // Unwrap double pre
+    for (Element pre : document.getElementsByTag("pre")) {
+      if (pre.childrenSize() == 1 & pre.child(0).tagName().equals("pre")) {
+        pre.unwrap();
+      }
+    }
+
     for (Element pre : document.getElementsByTag("pre")) {
       if (pre.children().size() != 1 || !pre.children().get(0).tagName().equals("code")) {
         Element code = pre.appendElement("code");
@@ -42,6 +50,13 @@ public class MarkdownCommentRenderer implements CommentRenderer {
         childNodes.forEach(code::appendChild);
 
         pre.appendChild(code);
+      }
+    }
+
+    // Unwrap double codes
+    for (Element code : document.getElementsByTag("code")) {
+      if (code.childrenSize() == 1 && code.child(0).tagName().equals("code")) {
+        code.unwrap();
       }
     }
 
