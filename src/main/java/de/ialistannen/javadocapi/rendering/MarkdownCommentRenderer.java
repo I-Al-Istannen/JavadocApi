@@ -34,22 +34,25 @@ public class MarkdownCommentRenderer implements CommentRenderer {
 
     // Unwrap double pre
     for (Element pre : document.getElementsByTag("pre")) {
-      if (pre.childrenSize() == 1 & pre.child(0).tagName().equals("pre")) {
+      if (pre.childrenSize() == 1 && pre.child(0).tagName().equals("pre")) {
         pre.unwrap();
       }
     }
 
     for (Element pre : document.getElementsByTag("pre")) {
       if (pre.children().size() != 1 || !pre.children().get(0).tagName().equals("code")) {
-        Element code = pre.appendElement("code");
-        code.attr("class", "language-java");
+        // Structure:
+        //   <pre>
+        // Transform to:
+        //   <code>
+        // and then
+        //   <pre>
+        //     <code>
+        pre.tagName("code");
+        pre.attr("class", "language-java");
 
-        // Move existing children one inside the code element
-        List<Node> childNodes = pre.childNodesCopy();
-        List.copyOf(pre.childNodes()).forEach(Node::remove);
-        childNodes.forEach(code::appendChild);
-
-        pre.appendChild(code);
+        Element newPre = pre.parent().appendElement("pre");
+        newPre.appendChild(pre);
       }
     }
 
