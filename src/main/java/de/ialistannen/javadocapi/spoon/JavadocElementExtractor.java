@@ -51,6 +51,7 @@ import spoon.reflect.declaration.CtModifiable;
 import spoon.reflect.declaration.CtModule;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.ModifierKind;
+import spoon.reflect.reference.CtActualTypeContainer;
 import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtVariableReference;
@@ -339,10 +340,24 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
       return null;
     }
     return new PossiblyGenericType(
-        new QualifiedName(reference.getQualifiedName(),
-            getModuleName(reference.getTypeDeclaration())),
-        getTypeParameters(reference.getTypeDeclaration())
+        new QualifiedName(
+            reference.getQualifiedName(),
+            getModuleName(reference.getTypeDeclaration())
+        ),
+        getTypeParameters(reference)
     );
+  }
+
+  private List<JavadocTypeParameter> getTypeParameters(CtActualTypeContainer container) {
+    if (container == null) {
+      return Collections.emptyList();
+    }
+
+    return container.getActualTypeArguments()
+        .stream()
+        .map(Objects::toString)
+        .map(JavadocTypeParameter::new)
+        .collect(Collectors.toList());
   }
 
   private List<JavadocTypeParameter> getTypeParameters(CtFormalTypeDeclarer m) {
