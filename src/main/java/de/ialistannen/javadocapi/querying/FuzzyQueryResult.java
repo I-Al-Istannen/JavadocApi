@@ -7,13 +7,15 @@ import java.util.Objects;
 public class FuzzyQueryResult implements QueryResult {
 
   private final boolean exact;
+  private final boolean caseSensitiveExact;
   private final QualifiedName qualifiedName;
   private final ElementLoader loader;
   private final ElementType type;
 
-  public FuzzyQueryResult(boolean exact, QualifiedName qualifiedName, ElementLoader loader,
-      ElementType type) {
+  public FuzzyQueryResult(boolean exact, boolean caseSensitiveExact, QualifiedName qualifiedName,
+      ElementLoader loader, ElementType type) {
     this.exact = exact;
+    this.caseSensitiveExact = caseSensitiveExact;
     this.qualifiedName = qualifiedName;
     this.loader = loader;
     this.type = type;
@@ -21,6 +23,10 @@ public class FuzzyQueryResult implements QueryResult {
 
   public boolean isExact() {
     return exact;
+  }
+
+  public boolean isCaseSensitiveExact() {
+    return caseSensitiveExact;
   }
 
   @Override
@@ -55,12 +61,13 @@ public class FuzzyQueryResult implements QueryResult {
       return false;
     }
     FuzzyQueryResult that = (FuzzyQueryResult) o;
-    return exact == that.exact && Objects.equals(qualifiedName, that.qualifiedName)
-        && Objects.equals(loader, that.loader) && type == that.type;
+    return exact == that.exact && caseSensitiveExact == that.caseSensitiveExact
+        && Objects.equals(qualifiedName, that.qualifiedName) && Objects.equals(
+        loader, that.loader) && type == that.type;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(exact, qualifiedName, loader, type);
+    return Objects.hash(exact, caseSensitiveExact, qualifiedName, loader, type);
   }
 }

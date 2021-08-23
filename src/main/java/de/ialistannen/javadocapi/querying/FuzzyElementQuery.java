@@ -18,7 +18,6 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
 
   @Override
   public List<FuzzyQueryResult> query(ElementLoader queryApi, String queryString) {
-    queryString = queryString.toUpperCase(Locale.ROOT);
     Query query = Query.fromString(queryString);
 
     if (query == null) {
@@ -33,14 +32,15 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
   }
 
   private List<FuzzyQueryResult> findNonClassElementByName(ElementLoader queryApi, Query query) {
+    Query normalizedQuery = query.normalized();
     Collection<LoadResult<QualifiedName>> potentialElements = queryApi
-        .findElementByName(query.getElementName())
+        .findElementByName(normalizedQuery.getElementName())
         .stream()
         .filter(it -> !(it.getResult() instanceof JavadocType))
         .map(it -> it.map(JavadocElement::getQualifiedName))
         .collect(Collectors.toList());
 
-    if (query.getParameters() == null) {
+    if (normalizedQuery.getParameters() == null) {
       return potentialElements.stream()
           .map(it -> toResult(
               query,
@@ -51,17 +51,18 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
     }
 
     return potentialElements.stream()
-        .filter(it -> fuzzyMatchParameters(query.getParameters(), it.getResult()))
+        .filter(it -> fuzzyMatchParameters(normalizedQuery.getParameters(), it.getResult()))
         .map(it -> toResult(query, it, ElementType.METHOD))
         .collect(Collectors.toList());
   }
 
   private List<FuzzyQueryResult> findElementsFromClass(ElementLoader queryApi, Query query) {
+    Query normalizedQuery = query.normalized();
     Collection<LoadResult<JavadocType>> potentialClasses = queryApi.findClassByName(
-        query.getClassName()
+        normalizedQuery.getClassName()
     );
 
-    if (query.getElementName() == null) {
+    if (normalizedQuery.getElementName() == null) {
       return potentialClasses
           .stream()
           .map(it -> toResult(
@@ -82,24 +83,24 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
               it -> it.getResult()
                   .getSimpleName()
                   .toUpperCase(Locale.ROOT)
-                  .endsWith(query.getElementName())
+                  .endsWith(normalizedQuery.getElementName())
           )
           .filter(it -> {
             // Filter out methods if user specified a "(", ignore it otherwise
-            if (query.getParameters() != null) {
+            if (normalizedQuery.getParameters() != null) {
               return it.getResult().isMethod();
             }
             return true;
           })
           .collect(Collectors.toList());
 
-      if (query.getParameters() == null) {
+      if (normalizedQuery.getParameters() == null) {
         results.addAll(enclosed);
         continue;
       }
 
       enclosed.stream()
-          .filter(it -> fuzzyMatchParameters(query.getParameters(), it.getResult()))
+          .filter(it -> fuzzyMatchParameters(normalizedQuery.getParameters(), it.getResult()))
           .forEach(results::add);
     }
 
@@ -133,12 +134,25 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
     return true;
   }
 
-  private FuzzyQueryResult toResult(Query query, LoadResult<QualifiedName> element,
-      ElementType type) {
-    Query elementQuery = Query.fromString(element.getResult().asString().toUpperCase(Locale.ROOT));
-    boolean exact = query.exactToReference(elementQuery);
+  private FuzzyQueryResult toResult(
+      Query query,
+      LoadResult<QualifiedName> element,
+      ElementType type
+  ) {
+    Query elementQuery = Query.fromString(element.getResult().asString());
+    Query normalizedElementQuery = elementQuery.normalized();
+    Query normalizedQuery = query.normalized();
 
-    return new FuzzyQueryResult(exact, element.getResult(), element.getLoader(), type);
+    boolean exact = normalizedQuery.exactToReference(normalizedElementQuery);
+    boolean caseSensitiveExact = query.exactToReference(elementQuery);
+
+    return new FuzzyQueryResult(
+        exact,
+        caseSensitiveExact,
+        element.getResult(),
+        element.getLoader(),
+        type
+    );
   }
 
   private static class Query {
@@ -282,6 +296,18 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
           ", elementName='" + elementName + '\'' +
           ", parameters=" + parameters +
           '}';
+    }
+
+    public Query normalized() {
+      return new Query(
+          className.toUpperCase(Locale.ROOT),
+          elementName != null ? elementName.toUpperCase(Locale.ROOT) : null,
+          parameters == null
+              ? null
+              : parameters.stream()
+                  .map(it -> it.toUpperCase(Locale.ROOT))
+                  .collect(Collectors.toList())
+      );
     }
   }
 }
