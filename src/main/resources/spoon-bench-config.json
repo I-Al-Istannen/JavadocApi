@@ -1,0 +1,14 @@
+{
+  "outputPath": "",
+  "resourcePaths": [
+    "../src/main/java",
+    "../spoon-control-flow/src/main/java",
+    "../spoon-dataflow/src/main/java",
+    "../spoon-decompiler/src/main/java",
+    "../spoon-visualisation/src/main/java",
+    "../spoon-smpl/src/main/java"
+  ],
+  "allowedPackages": [
+    "*"
+  ]
+}

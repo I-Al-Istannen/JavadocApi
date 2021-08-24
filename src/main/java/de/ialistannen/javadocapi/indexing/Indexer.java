@@ -77,8 +77,12 @@ public class Indexer {
     System.out.println("Model successfully converted\n");
 
     System.out.println(heading("Writing to output database"));
-    new SqliteStorage(ConfiguredGson.create(), Path.of(config.getOutputPath()))
-        .addAll(extractor.getFoundElements());
+    if (config.getOutputPath().isEmpty()) {
+      System.out.println("Skipped as path was empty");
+    } else {
+      new SqliteStorage(ConfiguredGson.create(), Path.of(config.getOutputPath()))
+          .addAll(extractor.getFoundElements());
+    }
   }
 
   private static void configureInputClassLoader(List<Path> buildFiles, Path mavenHome,
