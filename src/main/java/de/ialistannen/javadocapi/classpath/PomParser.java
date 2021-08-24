@@ -21,9 +21,12 @@ public class PomParser {
           .map(it -> new Repository(it.getUrl()))
           .collect(Collectors.toList());
 
-      List<Dependency> dependencies = mapDependencies(model.getDependencies());
+      List<Dependency> dependencies = mapDependencies(model, model.getDependencies());
       List<Dependency> dependencyManagement = mapDependencies(
-          model.getDependencyManagement().getDependencies()
+          model,
+          model.getDependencyManagement() == null
+              ? List.of()
+              : model.getDependencyManagement().getDependencies()
       );
 
       return new Pom(
@@ -36,14 +39,22 @@ public class PomParser {
     }
   }
 
-  private List<Dependency> mapDependencies(List<org.apache.maven.model.Dependency> dependencies) {
+  private List<Dependency> mapDependencies(Model model,
+      List<org.apache.maven.model.Dependency> dependencies) {
     return dependencies.stream()
         .map(it -> new Dependency(
-            it.getGroupId(),
-            it.getArtifactId(),
-            it.getVersion(),
+            resolveWithProperty(model, it.getGroupId()),
+            resolveWithProperty(model, it.getArtifactId()),
+            resolveWithProperty(model, it.getVersion()),
             it.getType().equals("pom")
         ))
         .collect(Collectors.toList());
+  }
+
+  private String resolveWithProperty(Model model, String rawValue) {
+    if (rawValue.startsWith("${")) {
+      return model.getProperties().getProperty(rawValue.substring(2, rawValue.length() - 1));
+    }
+    return rawValue;
   }
 }
