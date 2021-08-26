@@ -33,7 +33,7 @@ public class QualifiedName {
     }
     if (asText.contains(".")) {
       return Optional.of(new QualifiedName(
-          asText.substring(0, asText.lastIndexOf('.')),
+          asText.substring(0, indexOfLastSeparator()),
           moduleName
       ));
     }
@@ -42,7 +42,7 @@ public class QualifiedName {
 
   /**
    * Returns the simple name. The simple name of "java.lang.String" is "String" and the simple name
-   * of "String#lenhth" is "length".
+   * of "String#length" is "length".
    *
    * @return the simple name (i.e. without any qualifier)
    */
@@ -52,7 +52,14 @@ public class QualifiedName {
           // remove () from methods
           .replaceAll("\\(.*\\)", "");
     }
-    return asText.substring(asText.lastIndexOf('.') + 1);
+    return asText.substring(indexOfLastSeparator() + 1);
+  }
+
+  private int indexOfLastSeparator() {
+    if (asText.endsWith("...")) {
+      return asText.lastIndexOf('.', asText.length() - 4);
+    }
+    return asText.lastIndexOf('.');
   }
 
   /**

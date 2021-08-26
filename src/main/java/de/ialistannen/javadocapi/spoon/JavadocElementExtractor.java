@@ -49,6 +49,7 @@ import spoon.reflect.declaration.CtInterface;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtModifiable;
 import spoon.reflect.declaration.CtModule;
+import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtActualTypeContainer;
@@ -159,7 +160,7 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
     List<Parameter> parameters = executable.getParameters()
         .stream()
         .map(it -> new Parameter(
-            getPossiblyGenericType(it.getType()),
+            getParameterType(it),
             it.getSimpleName()
         ))
         .collect(Collectors.toList());
@@ -180,6 +181,22 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
         getTypeParameters(formalTypeDeclarer),
         getComment(executable)
     ));
+  }
+
+  private PossiblyGenericType getParameterType(CtParameter<?> parameter) {
+    PossiblyGenericType type = getPossiblyGenericType(parameter.getType());
+
+    if (parameter.isVarArgs()) {
+      return new PossiblyGenericType(
+          new QualifiedName(
+              type.getType().asString().replace("[]", "..."),
+              type.getType().getModuleName().orElse(null)
+          ),
+          type.getParameters()
+      );
+    }
+
+    return type;
   }
 
   private List<String> getModifiers(CtModifiable m) {
