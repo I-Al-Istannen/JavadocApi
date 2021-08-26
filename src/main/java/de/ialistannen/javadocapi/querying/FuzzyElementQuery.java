@@ -157,6 +157,9 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
 
   private static class Query {
 
+    private static final Pattern CONSTRUCTOR_PATTERN = Pattern.compile(
+        "^([\\w.$]+)(\\(.*\\)?)$", Pattern.CASE_INSENSITIVE
+    );
     private static final Pattern FIELD_PATTERN = Pattern.compile(
         "^([\\w.$]+)#([\\w$]+|<INIT>)$", Pattern.CASE_INSENSITIVE
     );
@@ -213,11 +216,20 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
         String className = matcher.group(1).strip();
         String fieldName = matcher.group(2).strip();
 
-        if (fieldName.toLowerCase(Locale.ROOT).equals(className.toLowerCase(Locale.ROOT))) {
-          fieldName = "<init>".toUpperCase(Locale.ROOT);
-        }
+        fieldName = adjustForConstructor(fieldName, className);
 
         return new Query(className, fieldName, null);
+      }
+
+      // Shorthand: String(String other) for String#String(String other)
+      matcher = CONSTRUCTOR_PATTERN.matcher(query);
+      if (matcher.matches()) {
+        String classname = matcher.group(1);
+        String rest = matcher.group(2);
+        query = classname
+            + "#"
+            + classname.substring(Math.max(0, classname.lastIndexOf('.') + 1))
+            + rest;
       }
 
       matcher = METHOD_PATTERN.matcher(query);
@@ -228,11 +240,17 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
       String methodName = matcher.group(2).strip();
       String parameterString = matcher.group(3).strip();
 
-      if (methodName.toLowerCase(Locale.ROOT).equals(className.toLowerCase(Locale.ROOT))) {
-        methodName = "<init>".toUpperCase(Locale.ROOT);
-      }
+      methodName = adjustForConstructor(methodName, className);
 
       return new Query(className, methodName, extractParameters(parameterString));
+    }
+
+    private static String adjustForConstructor(String fieldName, String className) {
+      String simpleClassname = new QualifiedName(className).getSimpleName();
+      if (fieldName.toLowerCase(Locale.ROOT).equals(simpleClassname.toLowerCase(Locale.ROOT))) {
+        fieldName = "<init>".toUpperCase(Locale.ROOT);
+      }
+      return fieldName;
     }
 
     private static List<String> extractParameters(String parameterString) {
