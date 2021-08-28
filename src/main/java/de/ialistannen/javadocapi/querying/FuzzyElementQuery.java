@@ -320,7 +320,7 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
 
     public Query normalized() {
       return new Query(
-          className.toUpperCase(Locale.ROOT),
+          className != null ? className.toUpperCase(Locale.ROOT) : null,
           elementName != null ? elementName.toUpperCase(Locale.ROOT) : null,
           parameters == null
               ? null
