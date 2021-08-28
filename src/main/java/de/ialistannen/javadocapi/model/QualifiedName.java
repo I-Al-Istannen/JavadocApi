@@ -62,6 +62,13 @@ public class QualifiedName {
     return asText.lastIndexOf('.');
   }
 
+  public QualifiedName appendToName(String suffix) {
+    return new QualifiedName(
+        asText + suffix,
+        moduleName
+    );
+  }
+
   /**
    * @return the module name, if any
    */

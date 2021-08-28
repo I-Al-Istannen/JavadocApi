@@ -29,6 +29,7 @@ import spoon.reflect.code.CtJavaDocTag.TagType;
 import spoon.reflect.declaration.CtCompilationUnit;
 import spoon.reflect.declaration.CtImportKind;
 import spoon.reflect.declaration.CtType;
+import spoon.reflect.declaration.CtTypeInformation;
 import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtFieldReference;
 import spoon.reflect.reference.CtTypeReference;
@@ -162,34 +163,25 @@ public class JavadocParser {
       String parameters = matcher.group(5);
       String label = matcher.group(6);
 
-      QualifiedName qualifiedName = qualifyTypeName(reference, className);
-      if (elementName != null) {
-        String memberAppendix = "#" + elementName;
+      QualifiedName qualifiedName;
+      if (elementName == null) {
+        qualifiedName = qualifyTypeName(reference, className);
+      } else {
         List<QualifiedName> elementParameterTypes = null;
 
         if (parameters != null) {
           elementParameterTypes = List.of();
 
-          memberAppendix += "(";
           if (!parameters.isBlank()) {
             elementParameterTypes = Arrays.stream(parameters.split(","))
                 .map(it -> it.strip().split(" ")[0])
                 .map(it -> qualifyTypeName(reference, it))
                 .collect(Collectors.toList());
-
-            memberAppendix += elementParameterTypes
-                .stream()
-                .map(QualifiedName::asString)
-                .collect(Collectors.joining(","));
           }
-          memberAppendix += ")";
         }
 
-        // Re-Resolve it as methods/fields might be declared in parent types
-        qualifiedName = qualifyTypeName(reference, className, elementName, elementParameterTypes);
-        qualifiedName = new QualifiedName(
-            qualifiedName.asString() + memberAppendix,
-            qualifiedName.getModuleName().orElse(null)
+        qualifiedName = qualifyName(
+            reference, className, elementName, elementParameterTypes
         );
       }
 
@@ -206,11 +198,21 @@ public class JavadocParser {
     );
   }
 
-  private QualifiedName qualifyTypeName(CtJavaDoc reference, String className, String elementName,
-      List<QualifiedName> parameters) {
+  private QualifiedName qualifyName(CtJavaDoc reference,
+      String className, String elementName, List<QualifiedName> parameters) {
     Optional<CtType<?>> enclosingType = qualifyType(reference, className);
 
-    QualifiedName fallbackName = qualifyTypeName(reference, className);
+    String memberAppendix = "#" + elementName;
+    if (parameters != null) {
+      memberAppendix += "(";
+      memberAppendix += parameters
+          .stream()
+          .map(QualifiedName::asString)
+          .collect(Collectors.joining(","));
+      memberAppendix += ")";
+    }
+
+    QualifiedName fallbackName = qualifyTypeName(reference, className).appendToName(memberAppendix);
 
     if (enclosingType.isEmpty()) {
       return fallbackName;
@@ -218,31 +220,60 @@ public class JavadocParser {
     CtType<?> type = enclosingType.get();
 
     if (parameters == null) {
-      return type.getAllFields()
+      Optional<QualifiedName> field = type.getAllFields()
           .stream()
           .filter(it -> it.getSimpleName().equals(elementName))
           .findFirst()
           .map(CtFieldReference::getDeclaringType)
           .map(it -> new QualifiedName(
-              it.getQualifiedName(),
+              it.getQualifiedName() + "#" + elementName,
               getModuleName(it.getTypeDeclaration())
-          ))
-          .orElse(fallbackName);
+          ));
+
+      // Try again as an executable
+      return field.orElseGet(() ->
+          qualifyTypeNameForExecutable(elementName, List.of(), fallbackName, type)
+      );
     }
 
-    return cache.get(
-        type.getQualifiedName(),
-        ignored -> type.getAllExecutables()
-    )
+    return qualifyTypeNameForExecutable(elementName, parameters, fallbackName, type);
+  }
+
+  private QualifiedName qualifyTypeNameForExecutable(
+      String elementName, List<QualifiedName> parameters, QualifiedName fallbackName,
+      CtType<?> type) {
+    List<CtExecutableReference<?>> possibleMethods = cache.get(
+            type.getQualifiedName(),
+            ignored -> type.getAllExecutables()
+        )
         .stream()
         .filter(it -> it.getSimpleName().equals(elementName))
-        .filter(it -> it.getParameters().size() == parameters.size())
-        .filter(it -> parameterTypesMatch(it.getParameters(), parameters))
-        .findFirst()
-        .map(it -> new QualifiedName(
-            it.getDeclaringType().getQualifiedName(),
-            getModuleName(it.getDeclaringType().getTypeDeclaration())
-        ))
+        .collect(Collectors.toList());
+
+    Optional<CtExecutableReference<?>> relevantMethod;
+    if (possibleMethods.size() == 1) {
+      relevantMethod = Optional.of(possibleMethods.get(0));
+    } else {
+      relevantMethod = possibleMethods
+          .stream()
+          .filter(it -> it.getParameters().size() == parameters.size())
+          .filter(it -> parameterTypesMatch(it.getParameters(), parameters))
+          .findFirst();
+    }
+
+    return relevantMethod
+        .map(it -> {
+          String paramString = it.getParameters()
+              .stream()
+              .map(CtTypeInformation::getQualifiedName)
+              .collect(Collectors.joining(","));
+          String methodName = it.getSimpleName() + "(" + paramString + ")";
+
+          return new QualifiedName(
+              it.getDeclaringType().getQualifiedName() + "#" + methodName,
+              getModuleName(it.getDeclaringType().getTypeDeclaration())
+          );
+        })
         .orElse(fallbackName);
   }
 
@@ -295,7 +326,7 @@ public class JavadocParser {
     }
 
     CtCompilationUnit parentUnit = element.getPosition().getCompilationUnit();
-    return parentUnit.getImports()
+    Optional<CtType<?>> importedType = parentUnit.getImports()
         .stream()
         .filter(it -> it.getImportKind() != CtImportKind.UNRESOLVED)
         .filter(it -> it.getReference().getSimpleName().equals(name))
@@ -307,5 +338,23 @@ public class JavadocParser {
                 .findFirst()
                 .map(CtTypeReference::getTypeDeclaration)
         );
+    if (importedType.isPresent()) {
+      return importedType;
+    }
+
+    // The classes are not imported and not referenced if they are only used in javadoc...
+    if (name.startsWith("java.lang")) {
+      return tryLoadClass(name).map(clazz -> element.getFactory().Type().get(clazz));
+    }
+    return tryLoadClass("java.lang." + name)
+        .map(clazz -> element.getFactory().Type().get(clazz));
+  }
+
+  private Optional<Class<?>> tryLoadClass(String name) {
+    try {
+      return Optional.of(Class.forName(name));
+    } catch (ClassNotFoundException e) {
+      return Optional.empty();
+    }
   }
 }
