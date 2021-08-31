@@ -1,0 +1,11 @@
+{
+  "outputPath": "target/ApFloat-Index.db",
+  "resourcePaths": ["/home/i_al_istannen/.temp/Indizes/apfloat/apfloat/src/main/java"],
+  "allowedPackages": [
+    "*"
+  ],
+  "buildFiles": [
+    "/home/i_al_istannen/.temp/Indizes/apfloat/pom.xml"
+  ],
+  "mavenHome": "/opt/maven"
+}
