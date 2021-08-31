@@ -305,7 +305,7 @@ public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
 
     private boolean classMatchWithReference(String myName, String reference) {
       boolean classExactMatch = myName.equals(reference);
-      boolean classUnqualifiedExactMatch = reference.contains("." + myName);
+      boolean classUnqualifiedExactMatch = reference.endsWith("." + myName);
       return classExactMatch || classUnqualifiedExactMatch;
     }
 
