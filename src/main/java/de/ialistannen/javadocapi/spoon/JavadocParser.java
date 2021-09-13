@@ -19,10 +19,12 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import spoon.experimental.CtUnresolvedImport;
 import spoon.javadoc.internal.Javadoc;
 import spoon.javadoc.internal.JavadocDescriptionElement;
 import spoon.javadoc.internal.JavadocInlineTag;
 import spoon.javadoc.internal.JavadocSnippet;
+import spoon.processing.FactoryAccessor;
 import spoon.reflect.code.CtJavaDoc;
 import spoon.reflect.code.CtJavaDocTag;
 import spoon.reflect.code.CtJavaDocTag.TagType;
@@ -32,6 +34,7 @@ import spoon.reflect.declaration.CtImportKind;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.CtTypeInformation;
+import spoon.reflect.factory.TypeFactory;
 import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtFieldReference;
 import spoon.reflect.reference.CtTypeReference;
@@ -340,7 +343,27 @@ public class JavadocParser {
     }
 
     CtCompilationUnit parentUnit = element.getPosition().getCompilationUnit();
-    Optional<CtType<?>> importedType = parentUnit.getImports()
+    Optional<CtType<?>> importedType = getImportedType(name, parentUnit);
+    if (importedType.isPresent()) {
+      return importedType;
+    }
+
+    // The classes are not imported and not referenced if they are only used in javadoc...
+    if (name.startsWith("java.lang")) {
+      return tryLoadModelOrReflection(element, name);
+    }
+
+    CtType<?> directLookupType = element.getFactory().Type().get(name);
+    if (directLookupType != null) {
+      return Optional.of(directLookupType);
+    }
+
+    return tryLoadModelOrReflection(element, name)
+        .or(() -> tryLoadModelOrReflection(element, "java.lang." + name));
+  }
+
+  private Optional<CtType<?>> getImportedType(String name, CtCompilationUnit parentUnit) {
+    Optional<CtType<?>> referencedImportedType = parentUnit.getImports()
         .stream()
         .filter(it -> it.getImportKind() != CtImportKind.UNRESOLVED)
         .filter(it -> it.getReference().getSimpleName().equals(name))
@@ -352,23 +375,32 @@ public class JavadocParser {
                 .findFirst()
                 .map(CtTypeReference::getTypeDeclaration)
         );
-    if (importedType.isPresent()) {
-      return importedType;
+
+    if (referencedImportedType.isPresent()) {
+      return referencedImportedType;
     }
 
-    // The classes are not imported and not referenced if they are only used in javadoc...
-    if (name.startsWith("java.lang")) {
-      return tryLoadClass(name).map(clazz -> element.getFactory().Type().get(clazz));
-    }
+    return parentUnit.getImports()
+        .stream()
+        .filter(it -> it.getImportKind() == CtImportKind.UNRESOLVED)
+        .filter(it -> ((CtUnresolvedImport) it).getUnresolvedReference().endsWith("*"))
+        .flatMap(it -> {
+          String reference = ((CtUnresolvedImport) it).getUnresolvedReference();
+          reference = reference.substring(0, reference.length() - 1);
 
-    CtType<?> directLookupType = element.getFactory().Type().get(name);
-    if (directLookupType != null) {
-      return Optional.of(directLookupType);
-    }
+          return tryLoadModelOrReflection(parentUnit, reference + name).stream();
+        })
+        .findFirst();
+  }
 
-    return tryLoadClass(name)
-        .or(() -> tryLoadClass("java.lang." + name))
-        .map(clazz -> element.getFactory().Type().get(clazz));
+  private Optional<CtType<?>> tryLoadModelOrReflection(FactoryAccessor base, String name) {
+    TypeFactory typeFactory = base.getFactory().Type();
+
+    CtType<?> inModel = typeFactory.get(name);
+    if (inModel != null) {
+      return Optional.of(inModel);
+    }
+    return tryLoadClass(name).map(typeFactory::get);
   }
 
   private Optional<Class<?>> tryLoadClass(String name) {
