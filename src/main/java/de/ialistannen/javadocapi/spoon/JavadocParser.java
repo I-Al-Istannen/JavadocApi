@@ -49,11 +49,6 @@ public class JavadocParser {
   }
 
   public JavadocComment fromCtJavadoc(CtJavaDoc javadoc) {
-    List<List<JavadocCommentFragment>> paragraphs = chopInParagraphs(javadoc.getContent())
-        .stream()
-        .map(it -> fromJavadoc(javadoc, Javadoc.parse(it)))
-        .collect(Collectors.toList());
-
     List<JavadocCommentTag> tags = new ArrayList<>();
     for (CtJavaDocTag tag : javadoc.getTags()) {
       String content = tag.getContent().replaceAll("[\\s+]", " ");
@@ -69,42 +64,12 @@ public class JavadocParser {
       ));
     }
 
-    return new JavadocComment(tags, paragraphs);
-  }
+    List<JavadocCommentFragment> content = fromJavadoc(
+        javadoc,
+        Javadoc.parse(javadoc.getContent())
+    );
 
-  private List<String> chopInParagraphs(String input) {
-    List<String> paragraphs = new ArrayList<>();
-
-    int currentIndex = 0;
-    while (currentIndex < input.length()) {
-      int doubleNewIndex = input.indexOf("\n\n", currentIndex);
-      int pTagIndex = input.indexOf("<p>", currentIndex);
-
-      int nextIndex;
-      if (doubleNewIndex < 0) {
-        nextIndex = pTagIndex;
-      } else if (pTagIndex < 0) {
-        nextIndex = doubleNewIndex;
-      } else {
-        nextIndex = Math.min(doubleNewIndex, pTagIndex);
-      }
-
-      if (nextIndex < 0) {
-        paragraphs.add(input.substring(currentIndex));
-        break;
-      }
-
-      if (nextIndex == doubleNewIndex) {
-        nextIndex += 2;
-      } else {
-        nextIndex += 3;
-      }
-
-      paragraphs.add(input.substring(currentIndex, nextIndex));
-      currentIndex = nextIndex;
-    }
-
-    return paragraphs;
+    return new JavadocComment(tags, content);
   }
 
   private List<JavadocCommentFragment> fromJavadoc(CtJavaDoc reference, Javadoc doc) {

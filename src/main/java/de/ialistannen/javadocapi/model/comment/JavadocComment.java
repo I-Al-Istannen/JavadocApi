@@ -6,27 +6,26 @@ import java.util.List;
 public class JavadocComment {
 
   private final List<JavadocCommentTag> tags;
-  private final List<List<JavadocCommentFragment>> paragraphs;
+  private final List<JavadocCommentFragment> content;
 
-  public JavadocComment(List<JavadocCommentTag> tags,
-      List<List<JavadocCommentFragment>> paragraphs) {
+  public JavadocComment(List<JavadocCommentTag> tags, List<JavadocCommentFragment> content) {
     this.tags = List.copyOf(tags);
-    this.paragraphs = paragraphs;
+    this.content = content;
   }
 
   public List<JavadocCommentTag> getTags() {
     return tags;
   }
 
-  public List<List<JavadocCommentFragment>> getParagraphs() {
-    return Collections.unmodifiableList(paragraphs);
+  public List<JavadocCommentFragment> getContent() {
+    return Collections.unmodifiableList(content);
   }
 
   @Override
   public String toString() {
     return "JavadocComment{" +
         "tags=" + tags +
-        ", paragraphs=" + paragraphs +
+        ", content=" + content +
         '}';
   }
 }
