@@ -360,7 +360,14 @@ public class JavadocParser {
     if (name.startsWith("java.lang")) {
       return tryLoadClass(name).map(clazz -> element.getFactory().Type().get(clazz));
     }
-    return tryLoadClass("java.lang." + name)
+
+    CtType<?> directLookupType = element.getFactory().Type().get(name);
+    if (directLookupType != null) {
+      return Optional.of(directLookupType);
+    }
+
+    return tryLoadClass(name)
+        .or(() -> tryLoadClass("java.lang." + name))
         .map(clazz -> element.getFactory().Type().get(clazz));
   }
 
