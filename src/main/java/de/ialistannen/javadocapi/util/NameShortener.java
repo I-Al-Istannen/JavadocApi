@@ -137,6 +137,9 @@ public class NameShortener {
     if (!input.contains(".")) {
       return input;
     }
+    if (input.endsWith("...") && input.indexOf('.') >= input.length() - 3) {
+      return input;
+    }
 
     return input.substring(input.indexOf('.') + 1);
   }

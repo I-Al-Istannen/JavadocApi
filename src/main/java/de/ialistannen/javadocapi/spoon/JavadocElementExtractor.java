@@ -459,7 +459,7 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
 
   private static QualifiedName executableRefToQualifiedName(CtType<?> owner,
       CtExecutableReference<?> ref) {
-    String signature = ref.getSignature();
+    String signature = VarargsCompatibleSignaturePrinter.getSignature(ref);
     // convert <fqn>() (i.e. a constructor) to just SimpleName()
     if (signature.startsWith(owner.getQualifiedName())) {
       signature = "<init>" + signature.substring(owner.getQualifiedName().length());
