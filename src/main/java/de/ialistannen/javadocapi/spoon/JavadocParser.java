@@ -27,7 +27,9 @@ import spoon.reflect.code.CtJavaDoc;
 import spoon.reflect.code.CtJavaDocTag;
 import spoon.reflect.code.CtJavaDocTag.TagType;
 import spoon.reflect.declaration.CtCompilationUnit;
+import spoon.reflect.declaration.CtExecutable;
 import spoon.reflect.declaration.CtImportKind;
+import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.CtTypeInformation;
 import spoon.reflect.reference.CtExecutableReference;
@@ -263,10 +265,15 @@ public class JavadocParser {
 
     return relevantMethod
         .map(it -> {
-          String paramString = it.getParameters()
-              .stream()
-              .map(CtTypeInformation::getQualifiedName)
-              .collect(Collectors.joining(","));
+          String paramString;
+
+          CtExecutable<?> executableDeclaration = it.getExecutableDeclaration();
+          if (executableDeclaration != null) {
+            paramString = getParameterStringFromExecutableDeclaration(executableDeclaration);
+          } else {
+            paramString = getParameterStringFromExecutableReference(it);
+          }
+
           String methodName = it.getSimpleName() + "(" + paramString + ")";
 
           return new QualifiedName(
@@ -275,6 +282,36 @@ public class JavadocParser {
           );
         })
         .orElse(fallbackName);
+  }
+
+  private String getParameterStringFromExecutableDeclaration(CtExecutable<?> declaration) {
+    return declaration.getParameters()
+        .stream()
+        .map(parameter -> {
+          if (parameter.isVarArgs()) {
+            return qualifyVarargsParameter(parameter);
+          }
+          return parameter.getType().getQualifiedName();
+        })
+        .collect(Collectors.joining(","));
+  }
+
+  private String qualifyVarargsParameter(CtParameter<?> parameter) {
+    String qualifiedName = parameter.getType().getQualifiedName();
+
+    if (qualifiedName.endsWith("[]")) {
+      qualifiedName = qualifiedName.substring(0, qualifiedName.lastIndexOf('['));
+    }
+
+    qualifiedName += "...";
+    return qualifiedName;
+  }
+
+  private String getParameterStringFromExecutableReference(CtExecutableReference<?> reference) {
+    return reference.getParameters()
+        .stream()
+        .map(CtTypeInformation::getQualifiedName)
+        .collect(Collectors.joining(","));
   }
 
   private boolean parameterTypesMatch(List<CtTypeReference<?>> actualParams,
@@ -289,12 +326,24 @@ public class JavadocParser {
   }
 
   private QualifiedName qualifyTypeName(CtJavaDoc element, String name) {
-    QualifiedName qualifiedName = qualifyTypeNameNoArray(element, name.replace("[]", ""));
-    if (!name.contains("[]")) {
+    QualifiedName qualifiedName = qualifyTypeNameNoArray(
+        element,
+        name.replace("[]", "").replace("...", "")
+    );
+
+    if (!name.contains("[]") && !name.endsWith("...")) {
       return qualifiedName;
     }
+
+    String arraySignifier;
+    if (name.contains("[")) {
+      arraySignifier = name.substring(name.indexOf('['));
+    } else {
+      arraySignifier = "...";
+    }
+
     return new QualifiedName(
-        qualifiedName.asString() + "[]",
+        qualifiedName.asString() + arraySignifier,
         qualifiedName.getModuleName().orElse(null)
     );
   }
