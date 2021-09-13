@@ -67,12 +67,14 @@ public class HtmlCommentRender implements CommentRenderer {
     public String visitInlineTag(JavadocCommentInlineTag tag) {
       // Magic incantation to make CopyDown emit proper language tags
       String codeOpenTag = "<code class=\"language-java\">";
+      String argument = fixIndentOfFirstLine(tag.getArgument().orElse(""));
+
       return switch (tag.getType()) {
-        case LITERAL, VALUE -> codeOpenTag + tag.getArgument().orElse("") + "</code>";
+        case LITERAL, VALUE -> codeOpenTag + argument + "</code>";
         case CODE -> {
-          String result = codeOpenTag + tag.getArgument().orElse("") + "</code>";
+          String result = codeOpenTag + escapeHtml(argument) + "</code>";
           if (result.lines().count() > 1) {
-            result = "<pre><code>" + result + "</code></pre>";
+            result = "<pre>" + result + "</pre>";
           }
           yield result;
         }
@@ -87,6 +89,42 @@ public class HtmlCommentRender implements CommentRenderer {
     @Override
     public String visitText(JavadocCommentText text) {
       return text.getText();
+    }
+
+    private String escapeHtml(String text) {
+      return text.replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /**
+     * Spoon doesn't parse tags correctly and might swallow the indent for the first line and turn:
+     * <pre>
+     * {@code
+     * {@code
+     *   Hello world
+     * }}
+     * </pre>
+     * into {@code "Hello world"}
+     *
+     * @param text the code text to fix
+     * @return the input with the indent of the first line normalized to the following lines if
+     *     needed
+     */
+    private String fixIndentOfFirstLine(String text) {
+      if (text.startsWith(" ")) {
+        return text;
+      }
+      List<String> lines = text.lines().collect(Collectors.toList());
+      if (lines.size() <= 1) {
+        return text;
+      }
+      int indent = lines.stream()
+          .skip(1)
+          .filter(it -> !it.isBlank())
+          .mapToInt(it -> it.length() - it.stripLeading().length())
+          .min()
+          .orElse(0);
+
+      return " ".repeat(indent) + text;
     }
   }
 }
