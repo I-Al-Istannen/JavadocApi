@@ -11,7 +11,12 @@ class VarargsCompatibleSignaturePrinter extends SignaturePrinter {
 
   @Override
   public <T> void writeNameAndParameters(CtExecutableReference<T> reference) {
-    CtExecutable<T> executable = reference.getExecutableDeclaration();
+    CtExecutable<T> executable = null;
+    try {
+      executable = reference.getExecutableDeclaration();
+    } catch (Exception e) {
+      System.out.println(e.getClass() + " " + e.getMessage());
+    }
     if (executable == null) {
       super.writeNameAndParameters(reference);
       return;
