@@ -19,6 +19,7 @@ import de.ialistannen.javadocapi.model.types.JavadocTypeParameter;
 import de.ialistannen.javadocapi.model.types.PossiblyGenericType;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import spoon.reflect.code.BinaryOperatorKind;
@@ -105,7 +107,7 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
         ),
         getModifiers(enumValue),
         getPossiblyGenericType(enumValue.getType()),
-        getComment(enumValue)
+        getDirectComment(enumValue)
     ));
     reportProgress();
     super.visitCtEnumValue(enumValue);
@@ -148,7 +150,7 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
         ),
         getModifiers(f),
         getPossiblyGenericType(f.getType()),
-        getComment(f)
+        getDirectComment(f)
     ));
     reportProgress();
     super.visitCtField(f);
@@ -179,7 +181,7 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
         thrownTypes,
         getAnnotations(executable),
         getTypeParameters(formalTypeDeclarer),
-        getComment(executable)
+        getExecutableComment(executable)
     ));
   }
 
@@ -313,7 +315,7 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
         new QualifiedName(ctType.getQualifiedName(), getModuleName(ctType)),
         getModifiers(ctType),
         memberNames,
-        getComment(ctType),
+        getTypeComment(ctType),
         getAnnotations(ctType),
         getTypeParameters(ctType),
         type,
@@ -401,8 +403,94 @@ public class JavadocElementExtractor extends CtAbstractVisitor {
     );
   }
 
-  private JavadocComment getComment(CtElement ctType) {
-    return ctType.getComments()
+  private JavadocComment getExecutableComment(CtExecutable<?> executable) {
+    if (executable instanceof CtMethod) {
+      return getMethodComment((CtMethod<?>) executable);
+    }
+    return getDirectComment(executable);
+  }
+
+  private JavadocComment getMethodComment(CtMethod<?> method) {
+    JavadocComment comment = getDirectComment(method);
+
+    if (comment != null) {
+      return comment;
+    }
+
+    CtType<?> declaringType = method.getDeclaringType();
+
+    Queue<CtTypeReference<?>> toVisit = new ArrayDeque<>();
+    if (declaringType.getSuperclass() != null) {
+      toVisit.add(declaringType.getSuperclass());
+    }
+    toVisit.addAll(declaringType.getSuperInterfaces());
+
+    CtTypeReference<?> nextTypeReference;
+    while ((nextTypeReference = toVisit.poll()) != null) {
+      CtType<?> nextType = nextTypeReference.getTypeDeclaration();
+      if (nextType == null) {
+        continue;
+      }
+      Optional<JavadocComment> possibleComment = executableCache.get(
+              nextType.getQualifiedName(),
+              ignored -> nextType.getAllExecutables()
+          )
+          .stream()
+          .map(this::getExecutableDeclarationNullOnException)
+          .filter(Objects::nonNull)
+          .filter(it -> it instanceof CtMethod)
+          .filter(candidate -> method.isOverriding((CtMethod<?>) candidate))
+          .map(this::getDirectComment)
+          .filter(Objects::nonNull)
+          .findFirst();
+
+      if (possibleComment.isPresent()) {
+        return possibleComment.get();
+      }
+    }
+
+    return null;
+  }
+
+  private CtExecutable<?> getExecutableDeclarationNullOnException(
+      CtExecutableReference<?> reference
+  ) {
+    try {
+      return reference.getExecutableDeclaration();
+    } catch (Exception ignored) {
+      return null;
+    }
+  }
+
+  private JavadocComment getTypeComment(CtType<?> ctType) {
+    JavadocComment comment = getDirectComment(ctType);
+
+    if (comment != null) {
+      return comment;
+    }
+
+    Queue<CtTypeReference<?>> toVisit = new ArrayDeque<>();
+    if (ctType.getSuperclass() != null) {
+      toVisit.add(ctType.getSuperclass());
+    }
+    toVisit.addAll(ctType.getSuperInterfaces());
+
+    CtTypeReference<?> nextTypeReference;
+    while ((nextTypeReference = toVisit.poll()) != null) {
+      CtType<?> nextType = nextTypeReference.getTypeDeclaration();
+      if (nextType == null) {
+        continue;
+      }
+      comment = getDirectComment(nextType);
+      if (comment != null) {
+        return comment;
+      }
+    }
+    return null;
+  }
+
+  private JavadocComment getDirectComment(CtElement ctElement) {
+    return ctElement.getComments()
         .stream()
         .filter(it -> it instanceof CtJavaDoc)
         .findFirst()
