@@ -1,6 +1,15 @@
 {
   "outputPath": "target/JavaFx-Index.db",
-  "resourcePaths": ["/home/i_al_istannen/.temp/Indizes/jfx/modules"],
+  "resourcePaths": [
+    "/home/i_al_istannen/.temp/Indizes/jfx/modules/javafx.base/src/main/java",
+    "/home/i_al_istannen/.temp/Indizes/jfx/modules/javafx.controls/src/main/java",
+    "/home/i_al_istannen/.temp/Indizes/jfx/modules/javafx.fxml/src/main/java",
+    "/home/i_al_istannen/.temp/Indizes/jfx/modules/javafx.graphics/src/main/java",
+    "/home/i_al_istannen/.temp/Indizes/jfx/modules/javafx.media/src/main/java",
+    "/home/i_al_istannen/.temp/Indizes/jfx/modules/javafx.swing/src/main/java",
+    "/home/i_al_istannen/.temp/Indizes/jfx/modules/javafx.swt/src/main/java",
+    "/home/i_al_istannen/.temp/Indizes/jfx/modules/javafx.web/src/main/java"
+  ],
   "allowedPackages": [
     "javafx.animation",
     "javafx.application",
