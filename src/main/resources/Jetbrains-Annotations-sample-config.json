@@ -1,0 +1,7 @@
+{
+  "outputPath": "target/Jetbrains-Annotations.db",
+  "resourcePaths": ["/home/i_al_istannen/.temp/Indizes/jetbrains-annotations"],
+  "allowedPackages": [
+    "*"
+  ]
+}
