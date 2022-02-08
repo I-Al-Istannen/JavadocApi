@@ -50,8 +50,9 @@ public class ParallelProcessor {
             } catch (Exception e) {
               System.err.println("Error in parallel worker");
               e.printStackTrace();
+            } finally {
+              workQueue.addAll(item.getDirectChildren());
             }
-            workQueue.addAll(item.getDirectChildren());
           }
 
           try {

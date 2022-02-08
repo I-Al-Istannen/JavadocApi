@@ -43,7 +43,7 @@ public class Indexer {
     launcher.getEnvironment().setOutputType(OutputType.NO_OUTPUT);
     launcher.getEnvironment().setSpoonProgress(new ConsoleProcessLogger(launcher));
     launcher.getEnvironment().setCommentEnabled(true);
-    launcher.getEnvironment().setComplianceLevel(15);
+    launcher.getEnvironment().setComplianceLevel(16);
     for (String path : config.getResourcePaths()) {
       if (path.endsWith(".zip")) {
         launcher.addInputResource(new ZipFolder(new File(path)));
