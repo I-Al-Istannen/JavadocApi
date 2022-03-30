@@ -51,6 +51,14 @@ public interface ElementLoader {
    */
   Collection<LoadResult<JavadocElement>> findByQualifiedName(QualifiedName name);
 
+  /**
+   * Tries to autocomplete a given prompt.
+   *
+   * @param prompt the prompt to complete
+   * @return completions
+   */
+  Collection<String> autocomplete(String prompt);
+
   class FetchException extends RuntimeException {
 
     public FetchException(Throwable cause) {

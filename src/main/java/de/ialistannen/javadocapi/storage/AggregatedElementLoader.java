@@ -46,4 +46,11 @@ public class AggregatedElementLoader implements ElementLoader {
         .flatMap(loader -> loader.findByQualifiedName(name).stream())
         .collect(Collectors.toList());
   }
+
+  @Override
+  public Collection<String> autocomplete(String prompt) {
+    return apis.stream()
+        .flatMap(it -> it.autocomplete(prompt).stream())
+        .collect(Collectors.toList());
+  }
 }

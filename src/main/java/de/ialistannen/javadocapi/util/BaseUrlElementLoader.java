@@ -69,6 +69,11 @@ public class BaseUrlElementLoader implements ElementLoader {
   }
 
   @Override
+  public Collection<String> autocomplete(String prompt) {
+    return delegate.autocomplete(prompt);
+  }
+
+  @Override
   public String toString() {
     return delegate.toString();
   }

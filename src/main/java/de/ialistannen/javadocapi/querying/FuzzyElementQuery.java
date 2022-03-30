@@ -17,6 +17,11 @@ import java.util.stream.Collectors;
 public class FuzzyElementQuery implements QueryApi<FuzzyQueryResult> {
 
   @Override
+  public Collection<String> autocomplete(ElementLoader loader, String prompt) {
+    return loader.autocomplete(prompt);
+  }
+
+  @Override
   public List<FuzzyQueryResult> query(ElementLoader queryApi, String queryString) {
     Query query = Query.fromString(queryString);
 
