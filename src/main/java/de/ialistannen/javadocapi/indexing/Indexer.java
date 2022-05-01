@@ -5,6 +5,7 @@ import de.ialistannen.javadocapi.classpath.Pom;
 import de.ialistannen.javadocapi.classpath.PomClasspathDiscoverer;
 import de.ialistannen.javadocapi.classpath.PomParser;
 import de.ialistannen.javadocapi.spoon.JavadocElementExtractor;
+import de.ialistannen.javadocapi.spoon.JavadocLauncher;
 import de.ialistannen.javadocapi.spoon.filtering.IndexerFilterChain;
 import de.ialistannen.javadocapi.spoon.filtering.ParallelProcessor;
 import de.ialistannen.javadocapi.storage.ConfiguredGson;
@@ -37,7 +38,7 @@ public class Indexer {
     IndexerConfig config = ConfiguredGson.create().fromJson(configFileString, IndexerConfig.class);
 
     System.out.println(heading("Configuring spoon"));
-    Launcher launcher = new Launcher();
+    Launcher launcher = new JavadocLauncher();
     launcher.getEnvironment().setShouldCompile(false);
     launcher.getEnvironment().disableConsistencyChecks();
     launcher.getEnvironment().setOutputType(OutputType.NO_OUTPUT);
