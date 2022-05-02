@@ -26,6 +26,7 @@ public class JavadocLauncher extends Launcher {
 
                 @Override
                 public boolean visit(MethodDeclaration methodDeclaration, ClassScope scope) {
+                    // avoid visiting method body
                     methodDeclaration.statements = null;
                     return super.visit(methodDeclaration, scope);
                 }
@@ -34,7 +35,9 @@ public class JavadocLauncher extends Launcher {
 
         @Override
         protected void traverseUnitDeclaration(JDTTreeBuilder builder, CompilationUnitDeclaration unitDeclaration) {
+            // replace the tree builder with our own
             super.traverseUnitDeclaration(this.treeBuilder, unitDeclaration);
+            // remove non-javadoc comments to avoid warnings from JDTCommentBuilder later
             unitDeclaration.comments = reduceComments(unitDeclaration);
         }
     }
