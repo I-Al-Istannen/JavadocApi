@@ -13,42 +13,43 @@ import java.util.Arrays;
 
 public class JavadocLauncher extends Launcher {
 
-    @Override
-    protected SpoonModelBuilder getCompilerInstance(Factory factory) {
-        return new Compiler(factory);
-    }
+  @Override
+  protected SpoonModelBuilder getCompilerInstance(Factory factory) {
+    return new Compiler(factory);
+  }
 
-    static class Compiler extends JDTBasedSpoonCompiler {
-        private final JDTTreeBuilder treeBuilder;
-        public Compiler(Factory factory) {
-            super(factory);
-            this.treeBuilder = new JDTTreeBuilder(factory) {
+  static class Compiler extends JDTBasedSpoonCompiler {
+    private final JDTTreeBuilder treeBuilder;
 
-                @Override
-                public boolean visit(MethodDeclaration methodDeclaration, ClassScope scope) {
-                    // avoid visiting method body
-                    methodDeclaration.statements = null;
-                    return super.visit(methodDeclaration, scope);
-                }
-            };
-        }
+    public Compiler(Factory factory) {
+      super(factory);
+      this.treeBuilder = new JDTTreeBuilder(factory) {
 
         @Override
-        protected void traverseUnitDeclaration(JDTTreeBuilder builder, CompilationUnitDeclaration unitDeclaration) {
-            // replace the tree builder with our own
-            super.traverseUnitDeclaration(this.treeBuilder, unitDeclaration);
-            // remove non-javadoc comments to avoid warnings from JDTCommentBuilder later
-            unitDeclaration.comments = reduceComments(unitDeclaration);
+        public boolean visit(MethodDeclaration methodDeclaration, ClassScope scope) {
+          // avoid visiting method body
+          methodDeclaration.statements = null;
+          return super.visit(methodDeclaration, scope);
         }
+      };
     }
 
-    static int[][] reduceComments(CompilationUnitDeclaration declaration) {
-        int[][] comments = declaration.comments;
-        if (comments == null) {
-            return null;
-        }
-        return Arrays.stream(comments)
-                .filter(comment -> comment[0] >= 0 && comment[1] >= 0)
-                .toArray(int[][]::new);
+    @Override
+    protected void traverseUnitDeclaration(JDTTreeBuilder builder, CompilationUnitDeclaration unitDeclaration) {
+      // replace the tree builder with our own
+      super.traverseUnitDeclaration(this.treeBuilder, unitDeclaration);
+      // remove non-javadoc comments to avoid warnings from JDTCommentBuilder later
+      unitDeclaration.comments = reduceComments(unitDeclaration);
     }
+  }
+
+  static int[][] reduceComments(CompilationUnitDeclaration declaration) {
+    int[][] comments = declaration.comments;
+    if (comments == null) {
+      return null;
+    }
+    return Arrays.stream(comments)
+        .filter(comment -> comment[0] >= 0 && comment[1] >= 0)
+        .toArray(int[][]::new);
+  }
 }
