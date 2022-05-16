@@ -38,7 +38,12 @@ public class Indexer {
     IndexerConfig config = ConfiguredGson.create().fromJson(configFileString, IndexerConfig.class);
 
     System.out.println(heading("Configuring spoon"));
-    Launcher launcher = new JavadocLauncher();
+    Launcher launcher;
+    if (Boolean.getBoolean("keepFullAst")) {
+      launcher = new Launcher();
+    } else {
+      launcher = new JavadocLauncher();
+    }
     launcher.getEnvironment().setShouldCompile(false);
     launcher.getEnvironment().disableConsistencyChecks();
     launcher.getEnvironment().setOutputType(OutputType.NO_OUTPUT);
