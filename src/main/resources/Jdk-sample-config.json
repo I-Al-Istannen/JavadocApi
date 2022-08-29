@@ -1,6 +1,6 @@
 {
-  "outputPath": "target/Jdk-Index.db",
-  "resourcePaths": ["/usr/lib/jvm/java-17-openjdk/lib/src.zip"],
+  "outputPath": "",
+  "resourcePaths": ["/usr/lib/jvm/java-18-openjdk/lib/src.zip"],
   "allowedPackages": [
     "java.applet",
     "java.awt",
