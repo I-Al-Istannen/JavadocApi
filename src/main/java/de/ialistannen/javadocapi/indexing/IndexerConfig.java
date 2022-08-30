@@ -14,14 +14,16 @@ public class IndexerConfig {
   private final String outputPath;
   private final String mavenHome;
   private final List<String> buildFiles;
+  private final boolean outputTimings;
 
   public IndexerConfig(Set<String> allowedPackages, List<String> resourcePaths, String outputPath,
-      String mavenHome, List<String> buildFiles) {
+      String mavenHome, List<String> buildFiles, boolean outputTimings) {
     this.allowedPackages = allowedPackages;
     this.resourcePaths = resourcePaths;
     this.outputPath = outputPath;
     this.mavenHome = mavenHome;
     this.buildFiles = buildFiles;
+    this.outputTimings = outputTimings;
   }
 
   public Set<String> getAllowedPackages() {
@@ -38,6 +40,10 @@ public class IndexerConfig {
 
   public Optional<Path> getMavenHome() {
     return Optional.ofNullable(mavenHome).map(Path::of);
+  }
+
+  public boolean isOutputTimings() {
+    return outputTimings;
   }
 
   public List<Path> getBuildFiles() {

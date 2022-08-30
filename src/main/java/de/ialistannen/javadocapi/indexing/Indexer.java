@@ -10,6 +10,7 @@ import de.ialistannen.javadocapi.spoon.filtering.IndexerFilterChain;
 import de.ialistannen.javadocapi.spoon.filtering.ParallelProcessor;
 import de.ialistannen.javadocapi.storage.ConfiguredGson;
 import de.ialistannen.javadocapi.storage.SqliteStorage;
+import de.ialistannen.javadocapi.util.Timings;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -34,10 +35,22 @@ public class Indexer {
       System.exit(1);
     }
 
-    String configFileString = Files.readString(Path.of(args[0]));
+    Timings timings = new Timings();
+    String configFileString = timings.measure(
+        "read-config",
+        () -> Files.readString(Path.of(args[0]))
+    );
     IndexerConfig config = ConfiguredGson.create().fromJson(configFileString, IndexerConfig.class);
 
+    if (config.isOutputTimings()) {
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread(() -> System.out.println(timings.serialize(ConfiguredGson.create())))
+          );
+    }
+
     System.out.println(heading("Configuring spoon"));
+    timings.startTimer("configure-launcher");
     Launcher launcher;
     if (Boolean.getBoolean("keepFullAst")) {
       launcher = new Launcher();
@@ -57,15 +70,21 @@ public class Indexer {
         launcher.addInputResource(path);
       }
     }
+    timings.stopTimer("configure-launcher");
 
     if (!config.getBuildFiles().isEmpty() && config.getMavenHome().isPresent()) {
-      configureInputClassLoader(config.getBuildFiles(), config.getMavenHome().get(), launcher);
+      timings.measure(
+          "build-classpath",
+          () -> configureInputClassLoader(
+              config.getBuildFiles(), config.getMavenHome().get(), launcher
+          )
+      );
     }
 
     System.out.println("Spoon successfully configured\n");
 
     System.out.println(heading("Building spoon model"));
-    CtModel model = launcher.buildModel();
+    CtModel model = timings.measure("build-model", launcher::buildModel);
     System.out.println("Model successfully built\n");
 
     System.out.println(heading("Converting Spoon Model "));
@@ -74,20 +93,25 @@ public class Indexer {
         new IndexerFilterChain(config.getAllowedPackages()).asFilter(),
         Runtime.getRuntime().availableProcessors()
     );
-    model.getAllModules()
-        .forEach(it -> processor.process(
-            it,
-            element -> element.accept(extractor))
-        );
-    processor.shutdown();
+    timings.measure("process-model", () -> {
+      model.getAllModules()
+          .forEach(it -> processor.process(
+              it,
+              element -> element.accept(extractor))
+          );
+      processor.shutdown();
+    });
     System.out.println("Model successfully converted\n");
 
     System.out.println(heading("Writing to output database"));
     if (config.getOutputPath().isEmpty()) {
       System.out.println("Skipped as path was empty");
     } else {
-      new SqliteStorage(ConfiguredGson.create(), Path.of(config.getOutputPath()))
-          .addAll(extractor.getFoundElements());
+      timings.measure(
+          "write-database",
+          () -> new SqliteStorage(ConfiguredGson.create(), Path.of(config.getOutputPath()))
+              .addAll(extractor.getFoundElements())
+      );
     }
   }
 
@@ -137,7 +161,7 @@ public class Indexer {
 
   private static String heading(String text, int indent) {
     return "\n" + " ".repeat(indent) + "\033[94;1m==== \033[36;1m" + text
-        + " \033[94;1m====\033[0m";
+           + " \033[94;1m====\033[0m";
   }
 
   private static class ConsoleProcessLogger extends ProgressLogger {
@@ -161,7 +185,7 @@ public class Indexer {
       if (touchedClasses % 1000 == 0) {
         System.out.println(
             "Phase " + process + " has discovered " + touchedClasses
-                + " classes so far. Currently working on " + task
+            + " classes so far. Currently working on " + task
         );
       }
     }
